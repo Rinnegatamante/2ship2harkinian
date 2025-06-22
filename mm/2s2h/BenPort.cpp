@@ -100,6 +100,10 @@ CrowdControl* CrowdControl::Instance;
 #include "window/gui/resource/Font.h"
 #include "window/gui/resource/FontFactory.h"
 
+#ifdef __vita__
+#include <vitasdk.h>
+#endif
+
 OTRGlobals* OTRGlobals::Instance;
 GameInteractor* GameInteractor::Instance;
 
@@ -723,10 +727,14 @@ extern "C" uint64_t GetFrequency() {
 }
 
 extern "C" uint64_t GetPerfCounter() {
+#ifdef __vita__
+    return sceKernelGetProcessTimeLow() / 1000;
+#else
     LARGE_INTEGER ticks;
     QueryPerformanceCounter(&ticks);
 
     return ticks.QuadPart;
+#endif
 }
 #else
 extern "C" uint64_t GetFrequency() {
