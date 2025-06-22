@@ -927,12 +927,14 @@ extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {
     last_fps = fps;
     last_update_rate = R_UPDATE_RATE;
 
+#ifndef __vita__
     {
         std::unique_lock<std::mutex> Lock(audio.mutex);
         while (audio.processing) {
             audio.cv_from_thread.wait(Lock);
         }
     }
+#endif
 
     bool curAltAssets = CVarGetInteger("gEnhancements.Mods.AlternateAssets", 0);
     if (prevAltAssets != curAltAssets) {
