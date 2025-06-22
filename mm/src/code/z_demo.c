@@ -1577,9 +1577,10 @@ void Cutscene_HandleEntranceTriggers(PlayState* play) {
 // use it for VB. In VB changing *should to false has no effect, but you instead modify the entrance & cutsceneIndex to
 // override the behavior.
 void func_800EDDB0(PlayState* play) {
+#ifndef __vita__
     LUSLOG_INFO("Cutscene_HandleConditionalTriggers: entrance: %d, cutsceneIndex: 0x%X", gSaveContext.save.entrance,
                 gSaveContext.save.cutsceneIndex);
-
+#endif
     if (!GameInteractor_Should(VB_PLAY_TRANSITION_CS, true)) {
         return;
     }
