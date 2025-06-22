@@ -112,7 +112,6 @@ Color_RGB8 goronColor = { 0x64, 0x14, 0x00 };
 Color_RGB8 zoraColor = { 0x00, 0xEC, 0x64 };
 
 OTRGlobals::OTRGlobals() {
-	printf("OTRGlobals\n");
     std::vector<std::string> archiveFiles;
     std::vector<std::string> patchFiles;
     std::string mmPathO2R = Ship::Context::LocateFileAcrossAppDirs("mm.o2r", appShortName);
@@ -166,29 +165,21 @@ OTRGlobals::OTRGlobals() {
         Ship::Context::CreateInstance("2 Ship 2 Harkinian", appShortName, "2ship2harkinian.json", archiveFiles, {}, 3,
                                       { .SampleRate = 44100, .SampleLength = 1024, .DesiredBuffered = 2480 });
 
-	printf("Starting 2 Ship 2 Harkinian version\n");
-    SPDLOG_INFO("Starting 2 Ship 2 Harkinian version {}", (char*)gBuildVersion);
+	SPDLOG_INFO("Starting 2 Ship 2 Harkinian version {}", (char*)gBuildVersion);
 
-	printf("prevAltAssets\n");
     prevAltAssets = CVarGetInteger("gEnhancements.Mods.AlternateAssets", 0);
     context->GetResourceManager()->SetAltAssetsEnabled(prevAltAssets);
 
     // Override LUS defaults
-	printf("Override\n");
     Ship::Context::GetInstance()->GetLogger()->set_level(
         (spdlog::level::level_enum)CVarGetInteger("gDeveloperTools.LogLevel", 1));
     Ship::Context::GetInstance()->GetLogger()->set_pattern("[%H:%M:%S.%e] [%s:%#] [%l] %v");
 
-	printf("GetGameOverlay\n");
     auto overlay = context->GetInstance()->GetWindow()->GetGui()->GetGameOverlay();
-	printf("LoadFont\n");
     overlay->LoadFont("Press Start 2P", "fonts/PressStart2P-Regular.ttf", 12.0f);
-	printf("LoadFont2\n");
     overlay->LoadFont("Fipps", "fonts/Fipps-Regular.otf", 32.0f);
-	printf("SetCurrentFont\n");
     overlay->SetCurrentFont(CVarGetString(CVAR_GAME_OVERLAY_FONT, "Press Start 2P"));
 
-	printf("GetResourceLoader\n");
     auto loader = context->GetResourceManager()->GetResourceLoader();
     loader->RegisterResourceFactory(std::make_shared<LUS::ResourceFactoryBinaryTextureV0>(), RESOURCE_FORMAT_BINARY,
                                     "Texture", static_cast<uint32_t>(LUS::ResourceType::Texture), 0);
@@ -251,7 +242,6 @@ OTRGlobals::OTRGlobals() {
     // gSaveStateMgr = std::make_shared<SaveStateMgr>();
     // gRandomizer = std::make_shared<Randomizer>();
 
-	printf("GetGameVersions\n");
     auto versions = context->GetResourceManager()->GetArchiveManager()->GetGameVersions();
     for (uint32_t version : versions) {
         if (!validHashes.contains(version)) {
@@ -667,16 +657,11 @@ extern "C" void InitOTR() {
     }
 #endif
 
-	printf("OTRGlobals\n");
     OTRGlobals::Instance = new OTRGlobals();
-	printf("GameInteractor\n");
     GameInteractor::Instance = new GameInteractor();
-	printf("LoadGuiTextures\n");
     LoadGuiTextures();
     BenGui::SetupGuiElements();
-	printf("InitEnhancements\n");
     InitEnhancements();
-	printf("InitDeveloperTools\n");
     InitDeveloperTools();
     GfxPatcher_ApplyNecessaryAuthenticPatches();
     DebugConsole_Init();
@@ -685,7 +670,6 @@ extern "C" void InitOTR() {
     OTRAudio_Init();
     OTRExtScanner();
 
-	printf("RegisterGameHook\n");
     GameInteractor::Instance->RegisterGameHook<GameInteractor::OnFileDropped>(Ben_ProcessDroppedFiles);
 
     time_t now = time(NULL);
@@ -708,7 +692,6 @@ extern "C" void InitOTR() {
 #endif
 
     std::shared_ptr<Ship::Config> conf = OTRGlobals::Instance->context->GetConfig();
-	printf("Done\n");
 }
 
 extern "C" void SaveManager_ThreadPoolWait() {
