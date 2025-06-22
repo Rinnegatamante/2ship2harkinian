@@ -59,6 +59,7 @@ void InitOTR();
 
 void SDL_main(int argc, char** argv /* void* arg*/) {
 #ifdef __vita__
+    sceIoMkdir("ux0:data/2s2h/shader_cache", 0777);
     scePowerSetArmClockFrequency(444);
     scePowerSetBusClockFrequency(222);
     scePowerSetGpuClockFrequency(222);
