@@ -16,7 +16,7 @@ size_t SysUcode_GetUCodeBootSize(void) {
     return (uintptr_t)rspbootTextEnd - (uintptr_t)rspbootTextStart;
 }
 
-UcodeHandlers SysUcode_GetUCode(void) {
+uint32_t SysUcode_GetUCode(void) {
     return initialgspUcodeText;
 }
 

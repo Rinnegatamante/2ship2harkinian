@@ -15,6 +15,11 @@
 #include "stackcheck.h"
 #include "BenPort.h"
 
+#ifdef __vita__
+#include <vitasdk.h>
+int _newlib_heap_size_user = 256 * 1024 * 1024;
+#endif
+
 // Variables are put before most headers as a hacky way to bypass bss reordering
 OSMesgQueue sSerialEventQueue;
 OSMesg sSerialMsgBuf[1];
@@ -53,6 +58,13 @@ void InitOTR();
 #endif
 
 void SDL_main(int argc, char** argv /* void* arg*/) {
+#ifdef __vita__
+    scePowerSetArmClockFrequency(444);
+    scePowerSetBusClockFrequency(222);
+    scePowerSetGpuClockFrequency(222);
+    scePowerSetGpuXbarClockFrequency(166);
+#endif
+
     intptr_t fb;
     intptr_t sysHeap;
     s32 exit;

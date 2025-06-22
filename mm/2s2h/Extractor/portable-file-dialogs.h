@@ -758,7 +758,7 @@ inline bool internal::executor::ready(int timeout /* = default_wait_timeout */) 
 
         m_stdout = m_future.get();
     }
-#elif __EMSCRIPTEN__ || __NX__
+#elif __EMSCRIPTEN__ || __NX__ || __vita__
     // FIXME: do something
     (void)timeout;
 #else

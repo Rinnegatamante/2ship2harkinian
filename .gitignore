@@ -1,3 +1,11 @@
+f/*
+*.elf
+*.velf
+*.vpk
+*.bin
+*.o
+*.sfo
+
 *.zip
 *.otr
 *.o2r
@@ -12,6 +20,7 @@ shipofharkinian.json
 .envrc
 imgui.ini
 saves/*
+vita_build/*
 
 mm/libultraship/extern/Debug/ImGui.lib
 

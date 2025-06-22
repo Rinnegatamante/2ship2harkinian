@@ -281,12 +281,14 @@ void osContGetQuery(OSContStatus* data) {
 }
 void osStartThread(OSThread* thread) {
 }
+#ifndef __vita__
 void osViSwapBuffer(void* vaddr) {
 }
 void osViSetMode(OSViMode* mode) {
 }
 void osViSetSpecialFeatures(u32 func) {
 }
+#endif
 void __osInitialize_common(void) {
 }
 void __osInitialize_autodetect(void) {
@@ -299,14 +301,18 @@ void osDestroyThread(OSThread* thread) {
 }
 s32 osContSetCh(u8 ch) {
 }
+#ifndef __vita__
 void osViSetYScale(f32 scale) {
 }
 void osViSetXScale(f32 value) {
 }
+#endif
 void osSpTaskYield(void) {
 }
+#ifndef __vita__
 void* osViGetCurrentFramebuffer(void) {
 }
+#endif
 OSPiHandle* osFlashInit(void) {
 }
 void osFlashReadId(u32* t, u32* v) {
@@ -355,12 +361,16 @@ void guS2DInitBg(uObjBg* bg) {
         bg->b.tmemLoadTH = bg->b.tmemH - 1;
     }
 }
+#ifndef __vita__
 void* osViGetNextFramebuffer() {
 }
+#endif
 OSYieldResult osSpTaskYielded(OSTask* task) {
 }
+#ifndef __vita__
 void osViBlack(u8 active) {
 }
+#endif
 static s16 sintable[0x400] = {
     0x0000, 0x0032, 0x0064, 0x0096, 0x00C9, 0x00FB, 0x012D, 0x0160, 0x0192, 0x01C4, 0x01F7, 0x0229, 0x025B, 0x028E,
     0x02C0, 0x02F2, 0x0324, 0x0357, 0x0389, 0x03BB, 0x03EE, 0x0420, 0x0452, 0x0484, 0x04B7, 0x04E9, 0x051B, 0x054E,

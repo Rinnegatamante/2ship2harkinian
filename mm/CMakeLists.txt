@@ -18,15 +18,15 @@ set (BUILD_SHARED_LIBS OFF CACHE STRING "install/link shared instead of static l
 # Set target arch type if empty. Visual studio solution generator provides it.
 ################################################################################
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-	if(NOT CMAKE_VS_PLATFORM_NAME)
-		set(CMAKE_VS_PLATFORM_NAME "x64")
-	endif()
-	message("${CMAKE_VS_PLATFORM_NAME} architecture in use")
+    if(NOT CMAKE_VS_PLATFORM_NAME)
+        set(CMAKE_VS_PLATFORM_NAME "x64")
+    endif()
+    message("${CMAKE_VS_PLATFORM_NAME} architecture in use")
 
-	if(NOT ("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64"
-		OR "${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Win32"))
-		message(FATAL_ERROR "${CMAKE_VS_PLATFORM_NAME} arch is not supported!")
-	endif()
+    if(NOT ("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64"
+        OR "${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Win32"))
+        message(FATAL_ERROR "${CMAKE_VS_PLATFORM_NAME} arch is not supported!")
+    endif()
 endif()
 
 ################################################################################
@@ -137,7 +137,7 @@ endif()
 
 list(FILTER ship__ EXCLUDE REGEX "2s2h/Extractor/*")
 
-if(NOT CMAKE_SYSTEM_NAME MATCHES "NintendoSwitch|CafeOS")
+if(NOT CMAKE_SYSTEM_NAME MATCHES "NintendoSwitch|CafeOS|PSVita")
     file(GLOB_RECURSE ship__Extractor RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "2s2h/Extractor/*.c"
         "2s2h/Extractor/*.cpp"
@@ -192,7 +192,7 @@ set(ALL_FILES
     ${Header_Files}
     ${Header_Files__include}
     ${ship__}
-	${libultra_headers}
+    ${libultra_headers}
     ${ship__Extractor}
     ${src__}
 )
@@ -209,37 +209,37 @@ endif()
 set(ROOT_NAMESPACE 2s2h)
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-	set_target_properties(${PROJECT_NAME} PROPERTIES
-		VS_GLOBAL_KEYWORD "Win32Proj"
-	)
-	set_target_properties(${PROJECT_NAME} PROPERTIES
-		INTERPROCEDURAL_OPTIMIZATION_RELEASE "TRUE"
-	)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        VS_GLOBAL_KEYWORD "Win32Proj"
+    )
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        INTERPROCEDURAL_OPTIMIZATION_RELEASE "TRUE"
+    )
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set_target_properties(${PROJECT_NAME} PROPERTIES
         XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
         OUTPUT_NAME "2s2h-macos"
     )
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-	set_target_properties(${PROJECT_NAME} PROPERTIES
-	OUTPUT_NAME "2s2h.elf"
-	)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+    OUTPUT_NAME "2s2h.elf"
+    )
 endif()
 ################################################################################
 # MSVC runtime library
 ################################################################################
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-	get_property(MSVC_RUNTIME_LIBRARY_DEFAULT TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY)
-	string(CONCAT "MSVC_RUNTIME_LIBRARY_STR"
-		$<$<CONFIG:Debug>:
-			MultiThreadedDebug
-		>
-		$<$<CONFIG:Release>:
-			MultiThreaded
-		>
-		$<$<NOT:$<OR:$<CONFIG:Debug>,$<CONFIG:Release>>>:${MSVC_RUNTIME_LIBRARY_DEFAULT}>
-	)
-	set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
+    get_property(MSVC_RUNTIME_LIBRARY_DEFAULT TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY)
+    string(CONCAT "MSVC_RUNTIME_LIBRARY_STR"
+        $<$<CONFIG:Debug>:
+            MultiThreadedDebug
+        >
+        $<$<CONFIG:Release>:
+            MultiThreaded
+        >
+        $<$<NOT:$<OR:$<CONFIG:Debug>,$<CONFIG:Release>>>:${MSVC_RUNTIME_LIBRARY_DEFAULT}>
+    )
+    set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
 endif()
 ################################################################################
 # Find/download Boost
@@ -270,8 +270,10 @@ endif()
 ################################################################################
 # Compile definitions
 ################################################################################
-find_package(SDL2)
-set(SDL2-INCLUDE ${SDL2_INCLUDE_DIRS})
+if(NOT CMAKE_SYSTEM_NAME MATCHES "PSVita")
+  find_package(SDL2)
+  set(SDL2-INCLUDE ${SDL2_INCLUDE_DIRS})
+endif()
 
 if (BUILD_CROWD_CONTROL)
     find_package(SDL2_net)
@@ -279,98 +281,98 @@ if (BUILD_CROWD_CONTROL)
 endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE assets
-	${CMAKE_CURRENT_SOURCE_DIR}/include/
-	${CMAKE_CURRENT_SOURCE_DIR}/include/PR
-	${CMAKE_CURRENT_SOURCE_DIR}/src/
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/PR
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/
     ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship
     ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/include
-	${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src
     ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/log
     ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/debug
     ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/menu
     ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/utils
-	${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/utils/binarytools
+    ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/utils/binarytools
     ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/config
     ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/resource
     ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/resource/type
-	${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/resource/factory
+    ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/resource/factory
     ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/audio
-	${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/window
-	${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/window/gui
-	${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/config
-	${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/public
-	${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/public/libultra
-	${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/public/bridge
+    ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/window
+    ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/window/gui
+    ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/config
+    ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/public
+    ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/public/libultra
+    ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/public/bridge
     ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/extern
     ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/extern/tinyxml2
     ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/libultraship/Lib/
-	${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/libultraship/Lib/libjpeg/include/
-	${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/libultraship/Lib/spdlog/include/
+    ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/libultraship/Lib/libjpeg/include/
+    ${CMAKE_CURRENT_SOURCE_DIR}/../spdlog/include/
     ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/graphic/Fast3D/U64/PR
     ${CMAKE_CURRENT_SOURCE_DIR}/../libultraship/src/graphic
     ${CMAKE_CURRENT_SOURCE_DIR}/../ZAPDTR/ZAPD/resource/type
-	${CMAKE_CURRENT_SOURCE_DIR}
-	${CMAKE_CURRENT_SOURCE_DIR}/2s2h/
-	${SDL2-INCLUDE}
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/2s2h/
+    ${SDL2-INCLUDE}
     ${SDL2-NET-INCLUDE}
     ${BOOST-INCLUDE}
-	${CMAKE_CURRENT_SOURCE_DIR}/assets/
-	.
+    ${CMAKE_CURRENT_SOURCE_DIR}/assets/
+    .
 )
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-	target_compile_definitions(${PROJECT_NAME} PRIVATE
-		"$<$<CONFIG:Debug>:"
-			"_DEBUG;"
-			"_CRT_SECURE_NO_WARNINGS;"
-			"ENABLE_DX11;"
-		">"
-		"$<$<CONFIG:Release>:"
-			"NDEBUG"
-		">"
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        "$<$<CONFIG:Debug>:"
+            "_DEBUG;"
+            "_CRT_SECURE_NO_WARNINGS;"
+            "ENABLE_DX11;"
+        ">"
+        "$<$<CONFIG:Release>:"
+            "NDEBUG"
+        ">"
            #"$<$<BOOL:${BUILD_CROWD_CONTROL}>:ENABLE_CROWD_CONTROL>"
-		"INCLUDE_GAME_PRINTF;"
+        "INCLUDE_GAME_PRINTF;"
            #"ENABLE_CROWD_CONTROL;"
-		"F3DEX_GBI_2"
-		"UNICODE;"
-		"_UNICODE"
-		STORMLIB_NO_AUTO_LINK
-		"_CRT_SECURE_NO_WARNINGS;"
-		NOMINMAX
-	)
+        "F3DEX_GBI_2"
+        "UNICODE;"
+        "_UNICODE"
+        STORMLIB_NO_AUTO_LINK
+        "_CRT_SECURE_NO_WARNINGS;"
+        NOMINMAX
+    )
 elseif (CMAKE_SYSTEM_NAME STREQUAL "CafeOS")
-	target_compile_definitions(${PROJECT_NAME} PRIVATE
-		"$<$<CONFIG:Debug>:"
-			"_DEBUG"
-		">"
-		"$<$<CONFIG:Release>:"
-			"NDEBUG"
-		">"
-		"F3DEX_GBI_2"
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        "$<$<CONFIG:Debug>:"
+            "_DEBUG"
+        ">"
+        "$<$<CONFIG:Release>:"
+            "NDEBUG"
+        ">"
+        "F3DEX_GBI_2"
         "SPDLOG_ACTIVE_LEVEL=3;"
-		"SPDLOG_NO_THREAD_ID;"
+        "SPDLOG_NO_THREAD_ID;"
         "SPDLOG_NO_TLS;"
-		"STBI_NO_THREAD_LOCALS;"
-	)
+        "STBI_NO_THREAD_LOCALS;"
+    )
 elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU|Clang|AppleClang")
-	target_compile_definitions(${PROJECT_NAME} PRIVATE
-		"$<$<CONFIG:Debug>:"
-			"_DEBUG"
-		">"
-		"$<$<CONFIG:Release>:"
-			"NDEBUG"
-		">"
-		"F3DEX_GBI_2"
-		# "$<$<BOOL:${BUILD_CROWD_CONTROL}>:ENABLE_CROWD_CONTROL>"
-		"SPDLOG_ACTIVE_LEVEL=0;"
-		"_CONSOLE;"
-		"_CRT_SECURE_NO_WARNINGS;"
-		"ENABLE_OPENGL;"
-		"UNICODE;"
-		"_UNICODE"
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        "$<$<CONFIG:Debug>:"
+            "_DEBUG"
+        ">"
+        "$<$<CONFIG:Release>:"
+            "NDEBUG"
+        ">"
+        "F3DEX_GBI_2"
+        # "$<$<BOOL:${BUILD_CROWD_CONTROL}>:ENABLE_CROWD_CONTROL>"
+        "SPDLOG_ACTIVE_LEVEL=0;"
+        "_CONSOLE;"
+        "_CRT_SECURE_NO_WARNINGS;"
+        "ENABLE_OPENGL;"
+        "UNICODE;"
+        "_UNICODE"
         "NON_MATCHING;"
         "NON_EQUIVALENT;"
-	)
+    )
 endif()
 ################################################################################
 # Compile and link options
@@ -386,13 +388,13 @@ if(MSVC)
             /Gy;
             /W3
         >
-		
-		/wd4024 #different types for formal and actual parameter [x]. Usually seen along side 4047.
-		/wd4047 #'uintptr_t' differs in levels of indirection from 'Gfx *'. Usually caused by passing a uintptr_t into a function expecting a pointer-types
-		/wd4090 #'initializing': different 'const' qualifiers. Caused when initializing a non const struct member with a const char*.		
-		/wd4101 # unreferenced local variable. Things like stack pads.
-		/wd4133 #incompatible types. Usually caused by passing a c string into a function that takes a pointer.
-		/wd4244 #conversion from [a] to [b]. Used to warn when copying to smaller type without a cast.
+        
+        /wd4024 #different types for formal and actual parameter [x]. Usually seen along side 4047.
+        /wd4047 #'uintptr_t' differs in levels of indirection from 'Gfx *'. Usually caused by passing a uintptr_t into a function expecting a pointer-types
+        /wd4090 #'initializing': different 'const' qualifiers. Caused when initializing a non const struct member with a const char*.        
+        /wd4101 # unreferenced local variable. Things like stack pads.
+        /wd4133 #incompatible types. Usually caused by passing a c string into a function that takes a pointer.
+        /wd4244 #conversion from [a] to [b]. Used to warn when copying to smaller type without a cast.
         /sdl-;
         /permissive-;
         /MP;
@@ -490,9 +492,26 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
                 -Wno-stringop-overflow
             >
         )
+    elseif (CMAKE_SYSTEM_NAME STREQUAL "PSVita")
+        target_compile_options(${PROJECT_NAME} PRIVATE
+            -Wall -Wextra -Wno-error
+            -Wno-return-type
+            -Wno-unused-parameter
+            -Wno-unused-function
+            -Wno-unused-variable
+            -Wno-missing-field-initializers
+            -Wno-parentheses
+            -Wno-narrowing
+            -Wno-c++11-narrowing
+            -Wno-implicit-function-declaration
+            -Wno-missing-braces
+            -Wno-incompatible-pointer-types
+            $<$<COMPILE_LANGUAGE:CXX>:-fpermissive>
+            $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-enum-enum-conversion>
+        )
     else()
         if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-		set(CPU_OPTION -msse2 -mfpmath=sse)
+        set(CPU_OPTION -msse2 -mfpmath=sse)
         endif()
 
         target_compile_options(${PROJECT_NAME} PRIVATE
@@ -512,7 +531,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
             $<$<COMPILE_LANGUAGE:CXX>:-fpermissive>
             $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-enum-enum-conversion>
             -pthread
-	    ${CPU_OPTION}
+        ${CPU_OPTION}
         )
 
         target_link_options(${PROJECT_NAME} PRIVATE
@@ -527,7 +546,7 @@ endif()
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
     set(VS_COPY_ASSETS_CMD ${CMAKE_COMMAND} -E copy_directory $<TARGET_FILE_DIR:2ship>/assets ${CMAKE_BINARY_DIR}/mm/assets)
 endif()
-if(NOT CMAKE_SYSTEM_NAME MATCHES "NintendoSwitch|CafeOS")
+if(NOT CMAKE_SYSTEM_NAME MATCHES "NintendoSwitch|CafeOS|PSVita")
     add_custom_command(
         TARGET ${PROJECT_NAME}
         POST_BUILD
@@ -548,7 +567,7 @@ endif()
 add_dependencies(${PROJECT_NAME}
     libultraship
 )
-if(NOT CMAKE_SYSTEM_NAME MATCHES "NintendoSwitch|CafeOS")
+if(NOT CMAKE_SYSTEM_NAME MATCHES "NintendoSwitch|CafeOS|PSVita")
 add_dependencies(${PROJECT_NAME}
     ZAPDLib
 )
@@ -556,19 +575,19 @@ endif()
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     find_package(glfw3 REQUIRED)
-	set(ADDITIONAL_LIBRARY_DEPENDENCIES
-		"libultraship;"
-		"ZAPDLib;"
-		"glu32;"
-		"SDL2::SDL2;"
-		"SDL2::SDL2main;"
+    set(ADDITIONAL_LIBRARY_DEPENDENCIES
+        "libultraship;"
+        "ZAPDLib;"
+        "glu32;"
+        "SDL2::SDL2;"
+        "SDL2::SDL2main;"
         #"$<$<BOOL:${BUILD_CROWD_CONTROL}>:SDL2_net::SDL2_net-static>"
-		"glfw;"
-		"winmm;"
-		"imm32;"
-		"version;"
-		"setupapi"
-	)
+        "glfw;"
+        "winmm;"
+        "imm32;"
+        "version;"
+        "setupapi"
+    )
 elseif(CMAKE_SYSTEM_NAME STREQUAL "NintendoSwitch")
     find_package(SDL2)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -590,18 +609,58 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "CafeOS")
     target_include_directories(${PROJECT_NAME} PRIVATE
         ${DEVKITPRO}/portlibs/wiiu/include/
     )
+elseif(CMAKE_SYSTEM_NAME STREQUAL "PSVita")
+    find_package(Threads REQUIRED)
+    set(ADDITIONAL_LIBRARY_DEPENDENCIES
+        storm
+        bzip2
+        zstd
+        zip
+        z
+        ssl
+        crypto
+        stdc++
+        -Wl,--whole-archive pthread -Wl,--no-whole-archive
+        "libultraship;"
+        tinyxml2
+        SDL2
+        vitaGL
+        vitashark
+        mathneon
+        SceShaccCgExt
+        SceAudioIn_stub
+        SceKernelDmacMgr_stub
+        SceIme_stub
+        SceGxm_stub
+        SceDisplay_stub
+        SceTouch_stub
+        SceHid_stub
+        SceCtrl_stub
+        SceNet_stub
+        SceNetCtl_stub
+        SceCommonDialog_stub
+        SceAudio_stub
+        SceAudioIn_stub
+        SceSysmodule_stub
+        SceMotion_stub
+        SceAppUtil_stub
+        SceAppMgr_stub
+        taihen_stub
+        SceShaccCg_stub
+        Threads::Threads
+    )
 else()
     find_package(SDL2)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
- 	set(ADDITIONAL_LIBRARY_DEPENDENCIES
+     set(ADDITIONAL_LIBRARY_DEPENDENCIES
         "libultraship;"
-		"ZAPDLib;"
-		SDL2::SDL2
+        "ZAPDLib;"
+        SDL2::SDL2
  #       "$<$<BOOL:${BUILD_CROWD_CONTROL}>:SDL2_net::SDL2_net>"
-		${CMAKE_DL_LIBS}
-		Threads::Threads
-	)
+        ${CMAKE_DL_LIBS}
+        Threads::Threads
+    )
 endif()
 
 if(NOT CMAKE_SYSTEM_NAME MATCHES "NintendoSwitch|CafeOS")
@@ -658,10 +717,10 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "CafeOS")
 wut_create_rpx(${PROJECT_NAME})
 
 wut_create_wuhb(${PROJECT_NAME}
-	NAME       "Two Ship Two Harkinian"
-	SHORTNAME  "2S2H"
-	AUTHOR     "${PROJECT_TEAM}"
-	ICON       ${CMAKE_CURRENT_SOURCE_DIR}/icon.jpg
+    NAME       "Two Ship Two Harkinian"
+    SHORTNAME  "2S2H"
+    AUTHOR     "${PROJECT_TEAM}"
+    ICON       ${CMAKE_CURRENT_SOURCE_DIR}/icon.jpg
 )
 
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/2s2h.rpx ${CMAKE_CURRENT_BINARY_DIR}/2s2h.wuhb DESTINATION . COMPONENT 2s2h)
