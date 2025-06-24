@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include "z64.h"
@@ -5,6 +7,10 @@
 #include "BenPort.h"
 #include "2s2h/Enhancements/FrameInterpolation/FrameInterpolation.h"
 //#include <math.h>
+
+#ifdef __vita__
+#include <math_neon.h>
+#endif
 
 #define SCREEN_WIDTH 320
 #define SCREEN_HEIGHT 240
@@ -763,7 +769,7 @@ void guLookAt(Mtx* m, f32 xEye, f32 yEye, f32 zEye, f32 xAt, f32 yAt, f32 zAt, f
     Matrix_MtxFToMtx((MtxF*)mf, m);
     // guMtxF2L(mf, m);
 }
-void guRotateF(float m[4][4], float a, float x, float y, float z) {
+void guRotateF(float m[4][4], float a, float xa, float ya, float za) {
     static float D_80097F90 = M_PI / 180.0f;
     float sine;
     float cosine;
@@ -774,14 +780,28 @@ void guRotateF(float m[4][4], float a, float x, float y, float z) {
     float xs;
     float ys;
     float zs;
-
+	
+#ifdef __vita__
+    float xyz[3] = {xa, ya, za};
+    normalize3_neon(xyz, xyz);
+    #define x xyz[0]
+    #define y xyz[1]
+    #define z xyz[2]
+#else
+    #define x xa
+    #define y ya
+    #define z za
     guNormalize(&x, &y, &z);
+#endif
 
     a = a * D_80097F90;
 
+#ifdef __vita__
+    sincosf(a, &sine, &cosine);
+#else
     sine = sinf(a);
     cosine = cosf(a);
-
+#endif
     ab = x * y * (1 - cosine);
     bc = y * z * (1 - cosine);
     ca = z * x * (1 - cosine);
@@ -804,6 +824,10 @@ void guRotateF(float m[4][4], float a, float x, float y, float z) {
     m[2][2] = (1 - t) * cosine + t;
     m[1][0] = ab - zs;
     m[0][1] = ab + zs;
+	
+#undef x
+#undef y
+#undef z
 }
 
 void guRotate(Mtx* m, float a, float x, float y, float z) {
