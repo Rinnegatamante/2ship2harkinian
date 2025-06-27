@@ -102,6 +102,7 @@ CrowdControl* CrowdControl::Instance;
 
 #ifdef __vita__
 #include <vitasdk.h>
+#define AUTO_FRAMESKIP
 #endif
 
 OTRGlobals* OTRGlobals::Instance;
@@ -169,7 +170,7 @@ OTRGlobals::OTRGlobals() {
         Ship::Context::CreateInstance("2 Ship 2 Harkinian", appShortName, "2ship2harkinian.json", archiveFiles, {}, 3,
                                       { .SampleRate = 44100, .SampleLength = 1024, .DesiredBuffered = 2480 });
 
-	SPDLOG_INFO("Starting 2 Ship 2 Harkinian version {}", (char*)gBuildVersion);
+    SPDLOG_INFO("Starting 2 Ship 2 Harkinian version {}", (char*)gBuildVersion);
 
     prevAltAssets = CVarGetInteger("gEnhancements.Mods.AlternateAssets", 0);
     context->GetResourceManager()->SetAltAssetsEnabled(prevAltAssets);
@@ -254,7 +255,7 @@ OTRGlobals::OTRGlobals() {
 #elif defined(__WIIU__)
             Ship::WiiU::ThrowInvalidOTR();
 #elif defined(__vita__)
-			printf("Invalid O2R File!\n");
+            printf("Invalid O2R File!\n");
 #else
             SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Invalid O2R File",
                                      "Attempted to load an invalid O2R file. Try regenerating.", nullptr);
@@ -863,12 +864,19 @@ extern "C" void Graph_StartFrame() {
     OTRGlobals::Instance->context->GetWindow()->StartFrame();
 }
 
+#ifdef __vita__
+void RunCommands(Gfx* Commands) {
+    gfx_run(Commands);
+    gfx_end_frame();
+}
+#else
 void RunCommands(Gfx* Commands, const std::vector<std::unordered_map<Mtx*, MtxF>>& mtx_replacements) {
     for (const auto& m : mtx_replacements) {
         gfx_run(Commands, m);
         gfx_end_frame();
     }
 }
+#endif
 
 // C->C++ Bridge
 extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {
@@ -878,11 +886,17 @@ extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {
     }
 
     audio.cv_to_thread.notify_one();
+#ifndef __vita__
     std::vector<std::unordered_map<Mtx*, MtxF>> mtx_replacements;
+#endif
     int target_fps = CVarGetInteger("gInterpolationFPS", 20);
     static int last_fps;
     static int last_update_rate;
     static int time;
+#ifdef AUTO_FRAMESKIP
+    static float frametime = 0.0f;
+    static float current_frametime = 0.0f;
+#endif
     int fps = target_fps;
     int original_fps = 60 / R_UPDATE_RATE;
     auto wnd = std::dynamic_pointer_cast<Fast::Fast3dWindow>(Ship::Context::GetInstance()->GetWindow());
@@ -893,8 +907,13 @@ extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {
 
     if (last_fps != fps || last_update_rate != R_UPDATE_RATE) {
         time = 0;
+#ifdef AUTO_FRAMESKIP
+        current_frametime = 0.0f;
+        frametime = 1.0f / (float)fps;
+#endif
     }
 
+#ifndef __vita__
     // time_base = fps * original_fps (one second)
     int next_original_frame = fps;
 
@@ -908,6 +927,7 @@ extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {
     }
 
     time -= fps;
+#endif
 
     int threshold = CVarGetInteger("gExtraLatencyThreshold", 80);
 
@@ -916,25 +936,44 @@ extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {
         wnd->SetMaximumFrameLatency(threshold > 0 && target_fps >= threshold ? 2 : 1);
     }
 
+#ifndef __vita__
     // When the gfx debugger is active, only run with the final mtx
     if (GfxDebuggerIsDebugging()) {
         mtx_replacements.clear();
         mtx_replacements.emplace_back();
     }
+#endif
 
+#ifdef __vita__
+#ifdef AUTO_FRAMESKIP
+    current_frametime -= frametime;
+    if (current_frametime < 0.0f) {
+        static uint32_t tick = sceKernelGetProcessTimeLow();
+        RunCommands(commands);
+        uint32_t new_tick = sceKernelGetProcessTimeLow();
+        if (new_tick - tick < 500000) {// When there's a stutter (0.5s), don't count it for the frameskip
+            current_frametime += (float)(new_tick - tick) / 1000000.0f;
+        } else {
+            current_frametime += frametime;
+        }
+        tick = new_tick;
+    }
+#else
+    RunCommands(commands);
+#endif
+#else
     RunCommands(commands, mtx_replacements);
+#endif
 
     last_fps = fps;
     last_update_rate = R_UPDATE_RATE;
 
-#ifndef __vita__
     {
         std::unique_lock<std::mutex> Lock(audio.mutex);
         while (audio.processing) {
             audio.cv_from_thread.wait(Lock);
         }
     }
-#endif
 
     bool curAltAssets = CVarGetInteger("gEnhancements.Mods.AlternateAssets", 0);
     if (prevAltAssets != curAltAssets) {
