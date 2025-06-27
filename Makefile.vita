@@ -81,8 +81,9 @@ GFX_UCODE := F3DEX_GBI_2
 PREFIX  = arm-vita-eabi
 CC      = $(PREFIX)-gcc
 CXX      = $(PREFIX)-g++
-CFLAGS  = -fno-lto -g -Wl,-q -O3 -ffast-math $(foreach dir,$(INCLUDES),-I$(dir)) \
-		-Wno-narrowing -DIMGUI_IMPL_OPENGL_ES2 -DSPDLOG_ACTIVE_LEVEL=6 \
+CFLAGS  = -fno-lto -g -Wl,-q -O3 -ffast-math -fno-short-enums -fsigned-char \
+		$(foreach dir,$(INCLUDES),-I$(dir)) \
+		-Wno-narrowing -DIMGUI_IMPL_OPENGL_ES2 -DSPDLOG_ACTIVE_LEVEL=6 -DNDEBUG \
 		-I$(VITASDK)/$(PREFIX)/include/SDL2 -DENABLE_OPENGL -D$(GFX_UCODE) \
 		-DCVAR_PREFIX_RANDOMIZER_ENHANCEMENT=\"$(CVAR_PREFIX_RANDOMIZER_ENHANCEMENT)\" \
 		-DCVAR_PREFIX_RANDOMIZER_SETTING=\"$(CVAR_PREFIX_RANDOMIZER_SETTING)\" \
