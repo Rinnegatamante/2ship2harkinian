@@ -18,6 +18,7 @@
 #ifdef __vita__
 #include <vitasdk.h>
 int _newlib_heap_size_user = 256 * 1024 * 1024;
+void *vita_main(void *argv);
 #endif
 
 // Variables are put before most headers as a hacky way to bypass bss reordering
@@ -57,13 +58,24 @@ void InitOTR();
 #define SDL_main main
 #endif
 
-void SDL_main(int argc, char** argv /* void* arg*/) {
+int SDL_main(int argc, char** argv /* void* arg*/) {
 #ifdef __vita__
     sceIoMkdir("ux0:data/2s2h/shader_cache", 0777);
     scePowerSetArmClockFrequency(444);
     scePowerSetBusClockFrequency(222);
     scePowerSetGpuClockFrequency(222);
     scePowerSetGpuXbarClockFrequency(166);
+    
+    sceClibPrintf("Starting main thread...\n");
+    pthread_t t;
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setstacksize(&attr, 2 * 1024 * 1024);
+    pthread_create(&t, &attr, vita_main, NULL);
+    return sceKernelExitDeleteThread(0);
+}
+
+void *vita_main(void *argv) {
 #endif
 
     intptr_t fb;
