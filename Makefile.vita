@@ -1,4 +1,5 @@
 TARGET := 2ship2harkinian
+TITLE := 2SHIP2HAR
 
 SOURCE_FOLDERS := mm/src/overlays/gamestates mm/src/overlays/kaleido_scope mm/src/overlays/actors \
 	mm/src/overlays/effects mm/src/overlays/fbdemos
@@ -123,7 +124,17 @@ CFLAGS  = -fno-lto -g -Wl,-q -O3 -ffast-math -fno-short-enums -fsigned-char \
 CXXFLAGS  = $(CFLAGS) -fexceptions -std=gnu++20 -fpermissive
 ASFLAGS = $(CFLAGS)
 
-all: $(TARGET).velf
+all: $(TARGET).vpk
+
+$(TARGET).vpk: $(TARGET).velf
+	vita-make-fself -c -s $< eboot.bin
+	vita-mksfoex -s TITLE_ID=$(TITLE) -d ATTRIBUTE2=12 "$(TARGET)" param.sfo
+	vita-pack-vpk -s param.sfo -b eboot.bin $(TARGET).vpk \
+		-a livearea/icon0.png=sce_sys/icon0.png \
+		-a livearea/pic0.png=sce_sys/pic0.png \
+		-a livearea/bg.png=sce_sys/livearea/contents/bg.png \
+		-a livearea/startup.png=sce_sys/livearea/contents/startup.png \
+		-a livearea/template.xml=sce_sys/livearea/contents/template.xml
 
 prepare: f $(OBJS_PREPARE)
 
@@ -141,7 +152,6 @@ f:
 	cp $< $<.unstripped.elf
 	$(PREFIX)-strip -g $<
 	vita-elf-create $< $@
-	vita-make-fself -c -s $@ eboot.bin
 
 $(TARGET).elf: $(FINAL_OBJS)
 	$(CXX) $(CXXFLAGS) $^ $(LIBS) -o $@
@@ -149,4 +159,4 @@ $(TARGET).elf: $(FINAL_OBJS)
 objects: $(OBJS)
 
 clean: $(OBJS_CLEAN)
-	@rm -rf $(TARGET).velf $(TARGET).elf $(FINAL_OBJS)
+	@rm -rf $(TARGET).velf $(TARGET).elf $(FINAL_OBJS) eboot.bin $(TARGET).vpk param.sfo
