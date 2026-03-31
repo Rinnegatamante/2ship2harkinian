@@ -102,7 +102,7 @@ CrowdControl* CrowdControl::Instance;
 
 #ifdef __vita__
 #include <vitasdk.h>
-#define AUTO_FRAMESKIP
+//#define AUTO_FRAMESKIP
 #endif
 
 OTRGlobals* OTRGlobals::Instance;
