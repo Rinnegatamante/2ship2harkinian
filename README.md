@@ -1,3 +1,20 @@
+# Starship Vita
+
+This is a port of 2ship2harkinian (v.1.1.2 for now but planned to be moved up to latest upstream) for PSVita.
+
+## Setup Instructions
+- Download [2ship2harkinian v.1.1.2](https://github.com/HarbourMasters/Starship/releases/tag/v1.0.0) for PC.
+- Follow its instructions to generate `mm.o2r`.
+- Place `mm.o2r` and `2ship.o2r` in `ux0:data/2s2h`.
+- Install the vpk.
+
+## Credits
+- TheIronUniverse for the Livearea assets.
+- withLogic for testing the homebrew.
+
+# Original Readme
+
+
 [comment]: <> (Todo: Make Light Mode Image)
 [comment]: <> (Todo: Make Dark Mode Image)
 
