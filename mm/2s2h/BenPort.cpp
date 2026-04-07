@@ -864,19 +864,12 @@ extern "C" void Graph_StartFrame() {
     OTRGlobals::Instance->context->GetWindow()->StartFrame();
 }
 
-#ifdef __vita__
-void RunCommands(Gfx* Commands) {
-    gfx_run(Commands);
-    gfx_end_frame();
-}
-#else
 void RunCommands(Gfx* Commands, const std::vector<std::unordered_map<Mtx*, MtxF>>& mtx_replacements) {
     for (const auto& m : mtx_replacements) {
         gfx_run(Commands, m);
         gfx_end_frame();
     }
 }
-#endif
 
 // C->C++ Bridge
 extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {
@@ -886,9 +879,7 @@ extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {
     }
 
     audio.cv_to_thread.notify_one();
-#ifndef __vita__
     std::vector<std::unordered_map<Mtx*, MtxF>> mtx_replacements;
-#endif
     int target_fps = CVarGetInteger("gInterpolationFPS", 20);
     static int last_fps;
     static int last_update_rate;
@@ -913,7 +904,6 @@ extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {
 #endif
     }
 
-#ifndef __vita__
     // time_base = fps * original_fps (one second)
     int next_original_frame = fps;
 
@@ -927,7 +917,6 @@ extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {
     }
 
     time -= fps;
-#endif
 
     int threshold = CVarGetInteger("gExtraLatencyThreshold", 80);
 
@@ -936,20 +925,17 @@ extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {
         wnd->SetMaximumFrameLatency(threshold > 0 && target_fps >= threshold ? 2 : 1);
     }
 
-#ifndef __vita__
     // When the gfx debugger is active, only run with the final mtx
     if (GfxDebuggerIsDebugging()) {
         mtx_replacements.clear();
         mtx_replacements.emplace_back();
     }
-#endif
 
-#ifdef __vita__
 #ifdef AUTO_FRAMESKIP
     current_frametime -= frametime;
     if (current_frametime < 0.0f) {
         static uint32_t tick = sceKernelGetProcessTimeLow();
-        RunCommands(commands);
+        RunCommands(commands, mtx_replacements);
         uint32_t new_tick = sceKernelGetProcessTimeLow();
         if (new_tick - tick < 500000) {// When there's a stutter (0.5s), don't count it for the frameskip
             current_frametime += (float)(new_tick - tick) / 1000000.0f;
@@ -958,9 +944,6 @@ extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {
         }
         tick = new_tick;
     }
-#else
-    RunCommands(commands);
-#endif
 #else
     RunCommands(commands, mtx_replacements);
 #endif
