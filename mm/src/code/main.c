@@ -60,6 +60,7 @@ void InitOTR();
 
 int SDL_main(int argc, char** argv /* void* arg*/) {
 #ifdef __vita__
+	//sceSysmoduleLoadModule(SCE_SYSMODULE_RAZOR_CAPTURE);
     sceIoMkdir("ux0:data/2s2h/shader_cache", 0777);
     scePowerSetArmClockFrequency(444);
     scePowerSetBusClockFrequency(222);
