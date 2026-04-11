@@ -208,7 +208,7 @@ static std::string GetPathWithoutFileName(char* filePath) {
 }
 
 static void gfx_flush(void) {
-    if (buf_vbo_len > 0) {
+    if (buf_vbo_num_tris > 0) {
         gfx_rapi->draw_triangles(buf_vbo, buf_vbo_len, buf_vbo_num_tris);
 #ifdef __vita__
         buf_vbo += buf_vbo_len;
@@ -1825,10 +1825,14 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
         // buf_vbo[buf_vbo_len++] = color->a / 255.0f;
     }
 
+#ifdef __vita__
+	buf_vbo_num_tris++;
+#else
     if (++buf_vbo_num_tris == MAX_BUFFERED) {
         // if (++buf_vbo_num_tris == 1) {
         gfx_flush();
     }
+#endif
 }
 
 static void gfx_sp_geometry_mode(uint32_t clear, uint32_t set) {
