@@ -5,8 +5,9 @@ This is a port of 2ship2harkinian (v.1.1.2 for now but planned to be moved up to
 ## Setup Instructions
 - Download [2ship2harkinian v.1.1.2](https://github.com/HarbourMasters/Starship/releases/tag/v1.0.0) for PC.
 - Follow its instructions to generate `mm.o2r`.
+- Extract `2s2h.zip` from the Release tab in `ux0:data`.
 - Place `mm.o2r` and `2ship.o2r` in `ux0:data/2s2h`.
-- Install the vpk.
+- Install the vpk from the Release tab.
 
 ## Credits
 - TheIronUniverse for the Livearea assets.
