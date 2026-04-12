@@ -5,6 +5,7 @@ f/*
 *.bin
 *.o
 *.sfo
+*.self
 
 *.zip
 *.otr

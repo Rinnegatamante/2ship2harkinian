@@ -278,16 +278,7 @@ OTRGlobals::~OTRGlobals() {
 }
 
 uint32_t OTRGlobals::GetInterpolationFPS() {
-    if (Ship::Context::GetInstance()->GetWindow()->GetWindowBackend() == Ship::WindowBackend::FAST3D_DXGI_DX11) {
-        return CVarGetInteger("gInterpolationFPS", 20);
-    }
-
-    if (CVarGetInteger("gMatchRefreshRate", 0)) {
-        return Ship::Context::GetInstance()->GetWindow()->GetCurrentRefreshRate();
-    }
-
-    return std::min<uint32_t>(Ship::Context::GetInstance()->GetWindow()->GetCurrentRefreshRate(),
-                              CVarGetInteger("gInterpolationFPS", 20));
+    return CVarGetInteger("gInterpolationFPS", 20);
 }
 
 extern "C" uint32_t Ship_GetInterpolationFPS() {
@@ -864,7 +855,7 @@ extern "C" void Graph_StartFrame() {
     OTRGlobals::Instance->context->GetWindow()->StartFrame();
 }
 
-void RunCommands(Gfx* Commands, const std::vector<std::unordered_map<Mtx*, MtxF>>& mtx_replacements) {
+void RunCommands(Gfx* Commands, const std::vector<robin_hood::unordered_map<Mtx*, MtxF>>& mtx_replacements) {
     for (const auto& m : mtx_replacements) {
         gfx_run(Commands, m);
         gfx_end_frame();
@@ -879,7 +870,7 @@ extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {
     }
 
     audio.cv_to_thread.notify_one();
-    std::vector<std::unordered_map<Mtx*, MtxF>> mtx_replacements;
+    std::vector<robin_hood::unordered_map<Mtx*, MtxF>> mtx_replacements;
     int target_fps = CVarGetInteger("gInterpolationFPS", 20);
     static int last_fps;
     static int last_update_rate;
