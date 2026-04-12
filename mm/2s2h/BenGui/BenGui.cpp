@@ -65,7 +65,6 @@ void SetupGuiElements() {
 #endif
     }
 
-#ifndef __vita__
     mBenMenu = std::make_shared<BenMenu>("gWindows.Menu", "Settings Menu");
     gui->SetMenu(mBenMenu);
 
@@ -114,7 +113,6 @@ void SetupGuiElements() {
     mNotificationWindow = std::make_shared<Notification::Window>("gWindows.Notifications", "Notifications Window");
     gui->AddGuiWindow(mNotificationWindow);
     mNotificationWindow->Show();
-#endif
 }
 
 void Destroy() {

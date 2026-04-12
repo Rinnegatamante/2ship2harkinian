@@ -451,7 +451,7 @@ void AddSettings() {
                 "Changes the Theme of the Menu Widgets.",
                 WIDGET_CVAR_COMBOBOX,
                 { .defaultVariant = COLOR_INDIGO, .comboBoxOptions = menuThemeOptions } },
-#if !defined(__SWITCH__) && !defined(__WIIU__) && !defined(__vita__)
+#if not defined(__SWITCH__) and not defined(__WIIU__)
               { "Menu Controller Navigation", CVAR_IMGUI_CONTROLLER_NAV,
                 "Allows controller navigation of the 2Ship menu (Settings, Enhancements,...)\nCAUTION: "
                 "This will disable game inputs while the menu is visible.\n\nD-pad to move between "

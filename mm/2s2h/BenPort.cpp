@@ -545,7 +545,7 @@ void DetectArchiveVersion(std::string fileName, bool isO2rType) {
     }
 
     if (isArchiveOld) {
-#if !defined(__SWITCH__) && !defined(__WIIU__) && !defined(__vita__)
+#if not defined(__SWITCH__) && not defined(__WIIU__) && not defined(__vita__)
         char msgBuf[250];
         char version[18]; // 5 digits for int16_max (x3) + separators + terminator
 
