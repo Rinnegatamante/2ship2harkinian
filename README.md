@@ -3,7 +3,7 @@
 This is a port of 2ship2harkinian (v.1.1.2 for now but planned to be moved up to latest upstream) for PSVita.
 
 ## Setup Instructions
-- Download [2ship2harkinian v.1.1.2](https://github.com/HarbourMasters/Starship/releases/tag/v1.0.0) for PC.
+- Download [2ship2harkinian v.1.1.2](https://github.com/HarbourMasters/2ship2harkinian/releases/tag/1.1.2) for PC.
 - Follow its instructions to generate `mm.o2r`.
 - Extract `2s2h.zip` from the Release tab in `ux0:data`.
 - Place `mm.o2r` and `2ship.o2r` in `ux0:data/2s2h`.
@@ -14,7 +14,7 @@ This is a port of 2ship2harkinian (v.1.1.2 for now but planned to be moved up to
 - withLogic for testing the homebrew.
 
 ## vitaGL flags
-HAVE_PTHREAD=1 HAVE_GLSL_SUPPORT=1 NO_DEBUG=1 HAVE_GLSL_TEXTURE_SIZE=1 STORE_DEPTH_STENCIL=1 CIRCULAR_VERTEX_POOL=2
+HAVE_PTHREAD=1 HAVE_GLSL_SUPPORT=1 NO_DEBUG=1 HAVE_GLSL_TEXTURE_SIZE=1 STORE_DEPTH_STENCIL=1
 
 # Original Readme
 
