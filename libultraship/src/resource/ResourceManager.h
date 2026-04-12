@@ -10,11 +10,7 @@
 #include "resource/ResourceLoader.h"
 #include "resource/archive/ArchiveManager.h"
 
-#ifndef __vita__
-#define BS_THREAD_POOL_ENABLE_PRIORITY
-#endif
-#define BS_THREAD_POOL_ENABLE_PAUSE
-#include <BS_thread_pool.hpp>
+#include "robin_hood.h"
 
 namespace Ship {
 struct File;
@@ -39,25 +35,13 @@ class ResourceManager {
     std::shared_ptr<IResource> LoadResource(const std::string& filePath, bool loadExact = false,
                                             std::shared_ptr<ResourceInitData> initData = nullptr);
     std::shared_ptr<IResource> LoadResourceProcess(const std::string& filePath, bool loadExact = false,
-                                                   std::shared_ptr<ResourceInitData> initData = nullptr);
+                                                   std::shared_ptr<ResourceInitData> initData = nullptr, uint64_t hash = 0);
     size_t UnloadResource(const std::string& filePath);
-#ifdef __vita__
-    std::shared_ptr<IResource>
-    LoadResourceAsync(const std::string& filePath, bool loadExact = false,
-                      std::shared_ptr<ResourceInitData> initData = nullptr);
-#else
-    std::shared_future<std::shared_ptr<IResource>>
-    LoadResourceAsync(const std::string& filePath, bool loadExact = false, BS::priority_t priority = BS::pr::normal,
-                      std::shared_ptr<ResourceInitData> initData = nullptr);
-#endif
-    std::shared_ptr<std::vector<std::shared_ptr<IResource>>> LoadDirectory(const std::string& searchMask);
-#ifdef __vita__
-    std::shared_ptr<std::vector<std::shared_ptr<IResource>>>
-	LoadDirectoryAsync(const std::string& searchMask);
-#else
-	std::shared_ptr<std::vector<std::shared_future<std::shared_ptr<IResource>>>>
-    LoadDirectoryAsync(const std::string& searchMask, BS::priority_t priority = BS::pr::normal);
-#endif
+    std::shared_ptr<IResource> LoadResourceAsync(const std::string& filePath, bool loadExact = false, std::shared_ptr<ResourceInitData> initData = nullptr);
+    std::shared_ptr<IResource> LoadResourceAsync(const char *filePath, bool loadExact, std::shared_ptr<ResourceInitData> initData, size_t sz);
+
+	std::shared_ptr<std::vector<std::shared_ptr<IResource>>> LoadDirectory(const std::string& searchMask);
+    std::shared_ptr<std::vector<std::shared_ptr<IResource>>> LoadDirectoryAsync(const std::string& searchMask);
     void DirtyDirectory(const std::string& searchMask);
     void UnloadDirectory(const std::string& searchMask);
     bool OtrSignatureCheck(const char* fileName);
@@ -65,19 +49,13 @@ class ResourceManager {
     void SetAltAssetsEnabled(bool isEnabled);
 
   protected:
-    std::shared_ptr<File> LoadFileProcess(const std::string& filePath,
-                                          std::shared_ptr<ResourceInitData> initData = nullptr);
-    std::shared_ptr<IResource> GetCachedResource(std::variant<ResourceLoadError, std::shared_ptr<IResource>> cacheLine);
-    std::variant<ResourceLoadError, std::shared_ptr<IResource>> CheckCache(const std::string& filePath,
-                                                                           bool loadExact = false);
-    std::variant<ResourceLoadError, std::shared_ptr<IResource>> CheckCache(uint64_t hash,
-                                                                           bool loadExact = false);
+    std::shared_ptr<File> LoadFileProcess(const std::string& filePath, std::shared_ptr<ResourceInitData> initData = nullptr);
+    std::shared_ptr<IResource> CheckCache(const std::string& filePath, bool loadExact = false);
+    std::shared_ptr<IResource> CheckCache(uint64_t hash, bool loadExact = false);
   private:
-    std::unordered_map<uint64_t, std::variant<ResourceLoadError, std::shared_ptr<IResource>>> mResourceCache;
+    robin_hood::unordered_map<uint64_t, std::shared_ptr<IResource>> mResourceCache;
     std::shared_ptr<ResourceLoader> mResourceLoader;
     std::shared_ptr<ArchiveManager> mArchiveManager;
-    std::shared_ptr<BS::thread_pool> mThreadPool;
-    std::mutex mMutex;
     bool mAltAssetsEnabled = false;
 };
 } // namespace Ship

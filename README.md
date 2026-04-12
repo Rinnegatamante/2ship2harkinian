@@ -1,4 +1,4 @@
-# Starship Vita
+# 2ship2harkinian Vita
 
 This is a port of 2ship2harkinian (v.1.1.2 for now but planned to be moved up to latest upstream) for PSVita.
 
