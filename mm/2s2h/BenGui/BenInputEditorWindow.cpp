@@ -1580,7 +1580,7 @@ void BenInputEditorWindow::DrawSetDefaultsButton(uint8_t portIndex) {
                                             ->GetDeviceIndexMappingManager()
                                             ->GetAllDeviceIndexMappings()) {
             auto sdlIndexMapping = std::static_pointer_cast<Ship::ShipDeviceIndexToSDLDeviceIndexMapping>(mapping);
-            if (sdlIndexMapping == nullptr) {
+            if (sdlIndexMapping == nullptr || !sdlIndexMapping->GetSDLControllerName().starts_with("PSVITA")) {
                 continue;
             }
 
