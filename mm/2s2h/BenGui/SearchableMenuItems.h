@@ -451,7 +451,7 @@ void AddSettings() {
                 "Changes the Theme of the Menu Widgets.",
                 WIDGET_CVAR_COMBOBOX,
                 { .defaultVariant = COLOR_INDIGO, .comboBoxOptions = menuThemeOptions } },
-#if not defined(__SWITCH__) and not defined(__WIIU__)
+#if !defined(__SWITCH__) && !defined(__WIIU__) && !defined(__vita__)
               { "Menu Controller Navigation", CVAR_IMGUI_CONTROLLER_NAV,
                 "Allows controller navigation of the 2Ship menu (Settings, Enhancements,...)\nCAUTION: "
                 "This will disable game inputs while the menu is visible.\n\nD-pad to move between "
@@ -631,7 +631,7 @@ void AddSettings() {
                         CVarGetFloat(CVAR_INTERNAL_RESOLUTION, 1));
                 } },
 #endif
-#ifndef __WIIU__
+#if !defined(__WIIU__) && !defined(__vita__)
               { "Anti-aliasing (MSAA): %d",
                 CVAR_MSAA_VALUE,
                 "Activates MSAA (multi-sample anti-aliasing) from 2x up to 8x, to smooth the edges of rendered "

@@ -308,7 +308,7 @@ void BenMenu::DrawElement() {
                                           .tooltip = "Reset"
 #ifdef __APPLE__
                                                      " (Command-R)"
-#elif !defined(__SWITCH__) && !defined(__WIIU__)
+#elif !defined(__SWITCH__) && !defined(__WIIU__) && !defined(__vita__)
                                                      " (Ctrl+R)"
 #else
                                                      ""

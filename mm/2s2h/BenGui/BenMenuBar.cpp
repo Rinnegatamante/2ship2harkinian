@@ -117,15 +117,17 @@ void DrawMenuBarIcon() {
 void DrawBenMenu() {
     if (UIWidgets::BeginMenu("2Ship")) {
         if (UIWidgets::MenuItem("Hide Menu Bar",
-#if !defined(__SWITCH__) && !defined(__WIIU__)
+#if !defined(__SWITCH__) && !defined(__WIIU__) && !defined(__vita__)
                                 "F1"
+#elif defined(__vita__)
+                                "Select"
 #else
                                 "[-]"
 #endif
                                 )) {
             Ship::Context::GetInstance()->GetWindow()->GetGui()->GetMenuBar()->ToggleVisibility();
         }
-#if !defined(__SWITCH__) && !defined(__WIIU__)
+#if !defined(__SWITCH__) && !defined(__WIIU__) && !defined(__vita__)
         if (UIWidgets::MenuItem("Toggle Fullscreen", "F11")) {
             Ship::Context::GetInstance()->GetWindow()->ToggleFullscreen();
         }
@@ -133,7 +135,7 @@ void DrawBenMenu() {
         if (UIWidgets::MenuItem("Reset",
 #ifdef __APPLE__
                                 "Command-R"
-#elif !defined(__SWITCH__) && !defined(__WIIU__)
+#elif !defined(__SWITCH__) && !defined(__WIIU__) && !defined(__vita__)
                                 "Ctrl+R"
 #else
                                 ""
@@ -143,7 +145,7 @@ void DrawBenMenu() {
                 Ship::Context::GetInstance()->GetWindow()->GetGui()->GetGuiWindow("Console"))
                 ->Dispatch("reset");
         }
-#if !defined(__SWITCH__) && !defined(__WIIU__)
+#if !defined(__SWITCH__) && !defined(__WIIU__) && !defined(__vita__)
         if (UIWidgets::MenuItem("Open App Files Folder")) {
             std::string filesPath = Ship::Context::GetInstance()->GetAppDirectoryPath();
             SDL_OpenURL(std::string("file:///" + std::filesystem::absolute(filesPath).string()).c_str());
@@ -209,7 +211,7 @@ void DrawSettingsMenu() {
                 "Multiplies your output resolution by the value inputted, as a more intensive but effective "
                 "form of anti-aliasing");
 #endif
-#ifndef __WIIU__
+#if !defined(__WIIU__) && !defined(__vita__)
             if (UIWidgets::CVarSliderInt((CVarGetInteger(CVAR_MSAA_VALUE, 1) == 1) ? "Anti-aliasing (MSAA): Off"
                                                                                    : "Anti-aliasing (MSAA): %d",
                                          CVAR_MSAA_VALUE, 1, 8, 1)) {

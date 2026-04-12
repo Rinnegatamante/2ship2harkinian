@@ -12,6 +12,9 @@ This is a port of 2ship2harkinian (v.1.1.2 for now but planned to be moved up to
 - TheIronUniverse for the Livearea assets.
 - withLogic for testing the homebrew.
 
+## vitaGL flags
+HAVE_PTHREAD=1 HAVE_GLSL_SUPPORT=1 NO_DEBUG=1 HAVE_GLSL_TEXTURE_SIZE=1 STORE_DEPTH_STENCIL=1 CIRCULAR_VERTEX_POOL=2
+
 # Original Readme
 
 
