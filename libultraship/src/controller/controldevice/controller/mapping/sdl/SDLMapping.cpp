@@ -93,8 +93,12 @@ uint16_t SDLMapping::GetSDLControllerProductId() {
 }
 
 bool SDLMapping::UsesPlaystationLayout() {
+#ifdef __vita__
+    return true;
+#else
     auto type = GetSDLControllerType();
     return type == SDL_CONTROLLER_TYPE_PS3 || type == SDL_CONTROLLER_TYPE_PS4 || type == SDL_CONTROLLER_TYPE_PS5;
+#endif
 }
 
 bool SDLMapping::UsesSwitchLayout() {
@@ -158,7 +162,7 @@ int32_t SDLMapping::GetCurrentSDLDeviceIndex() {
     for (int32_t i = 0; i < SDL_NumJoysticks(); i++) {
         SDL_Joystick* joystick = SDL_JoystickOpen(i);
         if (SDL_JoystickInstanceID(joystick) == SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(mController))) {
-            SDL_JoystickClose(joystick);
+			SDL_JoystickClose(joystick);
             return i;
         }
         SDL_JoystickClose(joystick);
