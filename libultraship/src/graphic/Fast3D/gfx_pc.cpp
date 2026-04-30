@@ -77,6 +77,7 @@ using namespace std;
 extern "C" {
     void normalize3_neon(float v[3], float d[3]);
     void matmul4_neon(float m0[16], float m1[16], float d[16]);
+	void *vglAllocFromScratch(size_t);
 };
 #endif
 
@@ -131,7 +132,6 @@ static const robin_hood::unordered_map<Mtx*, MtxF>* current_mtx_replacements;
 
 
 #ifdef __vita__
-float *buf_vbo_ptr;
 float *buf_vbo;
 #else
 static float buf_vbo[MAX_BUFFERED * (32 * 3)]; // 3 vertices in a triangle and 32 floats per vtx
@@ -212,9 +212,6 @@ static void gfx_flush(void) {
         gfx_rapi->draw_triangles(buf_vbo, buf_vbo_len, buf_vbo_num_tris);
 #ifdef __vita__
         buf_vbo += buf_vbo_len;
-		if (((uintptr_t)buf_vbo - (uintptr_t)buf_vbo_ptr) > (32 * 1024 * 1024 - MAX_BUFFERED * (32 * 3 * sizeof(float)))) {
-			buf_vbo = buf_vbo_ptr;
-		}
 #endif
         buf_vbo_len = 0;
         buf_vbo_num_tris = 0;
@@ -4255,6 +4252,9 @@ void gfx_end_frame(void) {
         gfx_rapi->finish_render();
         gfx_wapi->swap_buffers_end();
     }
+#ifdef __vita__
+	buf_vbo = (float *)vglAllocFromScratch(12 * 1024 * 1024);
+#endif
 }
 
 void gfx_set_target_ucode(UcodeHandlers ucode) {

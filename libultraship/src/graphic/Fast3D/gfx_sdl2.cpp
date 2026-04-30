@@ -37,7 +37,6 @@
 #endif
 
 #ifdef __vita__
-extern float *buf_vbo_ptr;
 extern float *buf_vbo;
 #include <vitasdk.h>
 typedef enum {
@@ -56,8 +55,8 @@ typedef enum {
 extern "C" {
 GLboolean vglInitWithCustomThreshold(int pool_size, int width, int height, int ram_threshold, int cdram_threshold, int phycont_threshold, int cdlg_threshold, SceGxmMultisampleMode msaa);
 void vglSetParamBufferSize(uint32_t size);
-void *vglAlloc(uint32_t size, vglMemType type);
 void vglSetupDisplayRenderTarget(uint8_t size);
+void *vglAllocFromScratch(size_t);
 };
 #endif
 
@@ -340,8 +339,7 @@ static void gfx_sdl_init(const char* game_name, const char* gfx_api_name, bool s
     vglSetupDisplayRenderTarget(3);
     vglInitWithCustomThreshold(0, 960, 544, 4 * 1024 * 1024, 0, 0, 0, SCE_GXM_MULTISAMPLE_4X);
     SDL_setenv("VITA_USE_GLSL_TRANSLATOR", "1", 1);
-    buf_vbo_ptr = (float *)vglAlloc(32 * 1024 * 1024, VGL_MEM_RAM);
-    buf_vbo = buf_vbo_ptr;
+    buf_vbo = (float *)vglAllocFromScratch(12 * 1024 * 1024);
 #endif
 
 #if SDL_VERSION_ATLEAST(2, 24, 0)
