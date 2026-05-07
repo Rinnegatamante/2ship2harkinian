@@ -339,7 +339,7 @@ static void gfx_sdl_init(const char* game_name, const char* gfx_api_name, bool s
     vglSetupDisplayRenderTarget(3);
     vglInitWithCustomThreshold(0, 960, 544, 4 * 1024 * 1024, 0, 0, 0, SCE_GXM_MULTISAMPLE_4X);
     SDL_setenv("VITA_USE_GLSL_TRANSLATOR", "1", 1);
-    buf_vbo = (float *)vglAllocFromScratch(12 * 1024 * 1024);
+    buf_vbo = (float *)vglAllocFromScratch(10 * 1024 * 1024);
 #endif
 
 #if SDL_VERSION_ATLEAST(2, 24, 0)

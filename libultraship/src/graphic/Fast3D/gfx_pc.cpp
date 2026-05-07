@@ -4253,7 +4253,7 @@ void gfx_end_frame(void) {
         gfx_wapi->swap_buffers_end();
     }
 #ifdef __vita__
-	buf_vbo = (float *)vglAllocFromScratch(12 * 1024 * 1024);
+	buf_vbo = (float *)vglAllocFromScratch(10 * 1024 * 1024);
 #endif
 }
 
