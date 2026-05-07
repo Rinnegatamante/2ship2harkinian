@@ -1737,10 +1737,10 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
         }
 
         if (use_fog) {
-            buf_vbo[buf_vbo_len++] = g_rdp.fog_color.r / 255.0f;
-            buf_vbo[buf_vbo_len++] = g_rdp.fog_color.g / 255.0f;
-            buf_vbo[buf_vbo_len++] = g_rdp.fog_color.b / 255.0f;
-            buf_vbo[buf_vbo_len++] = v_arr[i]->color.a / 255.0f; // fog factor (not alpha)
+            *buf_vbo_ptr++ = g_rdp.fog_color.r / 255.0f;
+            *buf_vbo_ptr++ = g_rdp.fog_color.g / 255.0f;
+            *buf_vbo_ptr++ = g_rdp.fog_color.b / 255.0f;
+            *buf_vbo_ptr++ = v_arr[i]->color.a / 255.0f; // fog factor (not alpha)
         }
 
         if (use_grayscale) {
