@@ -4,25 +4,26 @@ TITLE := 2SHIP2HAR
 SOURCE_FOLDERS := mm/src/overlays/gamestates mm/src/overlays/kaleido_scope mm/src/overlays/actors \
 	mm/src/overlays/effects mm/src/overlays/fbdemos
 
-ZAPD_INCLUDES := ZAPDTR/ZAPD ZAPDTR/lib/libgfxd
+ZAPD_INCLUDES := ZAPDTR/ZAPD
 
 ZAPD_SOURCES := ZAPDTR/ZAPD ZAPDTR/ZAPD/ZRoom ZAPDTR/ZAPD/ZRoom/Commands ZAPDTR/ZAPD/yaz0 ZAPDTR/ZAPD/OtherStructs \
 	ZAPDTR/ZAPD/Utils
 
-LUS_INCLUDES := libultraship/include libultraship/src libultraship/src/utils/binarytools libultraship/src/resource/type \
+LUS_INCLUDES := libultraship/include libultraship/src libultraship/src/ship/utils/binarytools libultraship/src/resource/type \
 	libultraship/src/resource libultraship/src/window libultraship/src/window/gui libultraship/src/audio libultraship/src/graphic \
-	libultraship/src libultraship/imgui libultraship/imgui/backends libultraship/src/public/bridge
+	libultraship/src libultraship/imgui libultraship/imgui/backends libultraship/src/public/bridge libultraship/include/libultraship \
+	libultraship/src/resource/factory libultraship/imgui/backends libultraship/imgui
 
-LUS_SOURCES := libultraship/src libultraship/src/audio libultraship/src/config libultraship/src/graphic/Fast3D/debug \
-	libultraship/src/debug libultraship/src/menu libultraship/src/utils libultraship/src/utils/binarytools \
-	libultraship/src/resource libultraship/src/resource/type libultraship/src/resource/factory \
-	libultraship/src/window libultraship/src/window/gui libultraship/src/config libultraship/src/public \
-	libultraship/src/public/libultra libultraship/src/public/bridge libultraship/src/graphic/Fast3D \
-	libultraship/src/log libultraship/imgui libultraship/src/controller/controldevice libultraship/src/window/gui/resource \
-	libultraship/src/controller/controldevice/controller libultraship/src/controller/controldevice/controller/mapping \
-	libultraship/src/controller/controldevice/controller/mapping/sdl libultraship/src/controller/controldevice/controller/mapping/factories \
-	libultraship/src/controller/controldevice/controller/mapping/keyboard libultraship/src/controller/controldevice/controller/mapping/mouse \
-	libultraship/src/controller/deviceindex libultraship/src/controller/controldeck libultraship/src/resource/archive
+LUS_SOURCES := libultraship/src/fast libultraship/src/fast/resource/type libultraship/src/fast/resource/factory libultraship/src/ship/resource/factory \
+	libultraship/src/fast/debug libultraship/src/fast/backends libultraship/src/ship libultraship/src/ship/audio libultraship/src/ship/resource/type \
+	libultraship/src/ship/config libultraship/src/ship/controller/controldeck libultraship/src/ship/controller/controldevice libultraship/src/ship/utils \
+	libultraship/src/ship/controller/controldevice/controller libultraship/src/ship/controller/controldevice/controller/mapping libultraship/src/ship/window \
+	libultraship/src/ship/controller/controldevice/controller/mapping/factories libultraship/src/ship/controller/controldevice/controller/mapping/keyboard \
+	libultraship/src/ship/controller/controldevice/controller/mapping/mouse libultraship/src/ship/controller/controldevice/controller/mapping/sdl \
+	libultraship/src/ship/controller/physicaldevice libultraship/src/ship/debug libultraship/src/ship/resource libultraship/src/ship/resource/archive \
+	libultraship/src/ship/utils/binarytools libultraship/src/ship/window/gui libultraship/src/ship/window/gui/resource libultraship/src/libultraship/window/gui \
+	libultraship/src/libultraship/log libultraship/src/libultraship/libultra libultraship/src/libultraship/controller/controldeck libultraship/src/libultraship/bridge \
+	libultraship/src/libultraship/controller/controldevice/controller libultraship/src/libultraship/controller/controldevice/controller/mapping libultraship/imgui
 
 SOURCES	:= $(foreach dir,$(SOURCE_FOLDERS), $(wildcard $(dir)/*)) $(LUS_SOURCES) $(ZAPD_SOURCES) \
 	mm/src/audio mm/src/audio/lib mm/src/code mm/2s2h mm/2s2h/BenGui mm/2s2h/Enhancements \
@@ -37,8 +38,8 @@ SOURCES	:= $(foreach dir,$(SOURCE_FOLDERS), $(wildcard $(dir)/*)) $(LUS_SOURCES)
 	mm/2s2h/NameTag mm/2s2h/SaveManager/Migrations mm/2s2h/resource/importer mm/2s2h/resource/type/scenecommand \
 	mm/2s2h/resource/importer/scenecommand vita
 	
-INCLUDES := $(LUS_INCLUDES) $(ZAPD_INCLUDES) \
-	mm/include/PR mm/include  mm/assets mm/src  spdlog/include mm/2s2h mm vita 
+INCLUDES := $(LUS_INCLUDES) $(ZAPD_INCLUDES) $(VITASDK)/arm-vita-eabi/include/opus \
+	mm/include/PR mm/include  mm/assets mm/src spdlog/include mm/2s2h mm vita 
 
 LIBS = -lstorm -lgfxd -lbzip2 -lzip -lzstd -lz -llzma -lssl -lcrypto -lstdc++ -lpng -Wl,--whole-archive -lpthread -Wl,--no-whole-archive \
 	-ltinyxml2 -lSDL2 -lvitaGL -lvitashark -lSceShaccCgExt -ltaihen_stub -lmathneon -lSceAudioIn_stub -lSceIme_stub \
