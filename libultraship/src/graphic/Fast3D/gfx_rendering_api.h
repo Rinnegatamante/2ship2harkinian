@@ -11,11 +11,6 @@
 
 struct ShaderProgram;
 
-struct GfxClipParameters {
-    bool z_is_from_0_to_1;
-    bool invert_y;
-};
-
 enum FilteringMode { FILTER_THREE_POINT, FILTER_LINEAR, FILTER_NONE };
 
 // A hash function used to hash a: pair<float, float>
@@ -32,7 +27,7 @@ struct hash_pair_ff {
 struct GfxRenderingAPI {
     const char* (*get_name)(void);
     int (*get_max_texture_size)(void);
-    struct GfxClipParameters (*get_clip_parameters)(void);
+    bool (*get_clip_parameters)(void);
     void (*unload_shader)(struct ShaderProgram* old_prg);
     void (*load_shader)(struct ShaderProgram* new_prg);
     struct ShaderProgram* (*create_and_load_new_shader)(uint64_t shader_id0, uint32_t shader_id1);

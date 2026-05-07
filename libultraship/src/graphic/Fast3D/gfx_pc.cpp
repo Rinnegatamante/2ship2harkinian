@@ -1666,45 +1666,52 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
 
     gfx_rapi->shader_get_info(prg, &num_inputs, used_textures);
 
-    struct GfxClipParameters clip_parameters = gfx_rapi->get_clip_parameters();
+    bool invert_y = gfx_rapi->get_clip_parameters();
+	
+	float *buf_vbo_ptr = &buf_vbo[buf_vbo_len];
+    float u_scale[2] = {0.03125f, 0.03125f};
+    float v_scale[2] = {0.03125f, 0.03125f};
+    float u_offset[2] = {0.0f, 0.0f};
+    float v_offset[2] = {0.0f, 0.0f};
+    float inv_tex_width[2] = {1.0f, 1.0f};
+    float inv_tex_height[2] = {1.0f, 1.0f};
+    
+    for (int t = 0; t < 2; t++) {
+        if (!used_textures[t]) {
+            continue;
+        }
+
+        int shifts = g_rdp.texture_tile[g_rdp.first_tile_index + t].shifts;
+        int shiftt = g_rdp.texture_tile[g_rdp.first_tile_index + t].shiftt;
+        
+        inv_tex_width[t] = 1.0f / (float)tex_width[t];
+        inv_tex_height[t] = 1.0f / (float)tex_height[t];
+
+        if (shifts != 0) {
+            u_scale[t] *= (shifts <= 10) ? (1.0f / (1 << shifts)) : (float)(1 << (16 - shifts));
+        }
+        if (shiftt != 0) {
+            v_scale[t] *= (shiftt <= 10) ? (1.0f / (1 << shiftt)) : (float)(1 << (16 - shiftt));
+        }
+        
+        u_offset[t] = g_rdp.texture_tile[g_rdp.first_tile_index + t].uls * 0.25f;
+        v_offset[t] = g_rdp.texture_tile[g_rdp.first_tile_index + t].ult * 0.25f;
+    }
 
     for (int i = 0; i < 3; i++) {
         float z = v_arr[i]->z, w = v_arr[i]->w;
-        if (clip_parameters.z_is_from_0_to_1) {
-            z = (z + w) / 2.0f;
-        }
 
-        buf_vbo[buf_vbo_len++] = v_arr[i]->x;
-        buf_vbo[buf_vbo_len++] = clip_parameters.invert_y ? -v_arr[i]->y : v_arr[i]->y;
-        buf_vbo[buf_vbo_len++] = z;
-        buf_vbo[buf_vbo_len++] = w;
+        *buf_vbo_ptr++ = v_arr[i]->x;
+        *buf_vbo_ptr++ = invert_y ? -v_arr[i]->y : v_arr[i]->y;
+        *buf_vbo_ptr++ = z;
+        *buf_vbo_ptr++ = w;
 
         for (int t = 0; t < 2; t++) {
             if (!used_textures[t]) {
                 continue;
             }
-            float u = v_arr[i]->u / 32.0f;
-            float v = v_arr[i]->v / 32.0f;
-
-            int shifts = g_rdp.texture_tile[g_rdp.first_tile_index + t].shifts;
-            int shiftt = g_rdp.texture_tile[g_rdp.first_tile_index + t].shiftt;
-            if (shifts != 0) {
-                if (shifts <= 10) {
-                    u /= 1 << shifts;
-                } else {
-                    u *= 1 << (16 - shifts);
-                }
-            }
-            if (shiftt != 0) {
-                if (shiftt <= 10) {
-                    v /= 1 << shiftt;
-                } else {
-                    v *= 1 << (16 - shiftt);
-                }
-            }
-
-            u -= g_rdp.texture_tile[g_rdp.first_tile_index + t].uls / 4.0f;
-            v -= g_rdp.texture_tile[g_rdp.first_tile_index + t].ult / 4.0f;
+            float u = (v_arr[i]->u * u_scale[t]) - u_offset[t];
+            float v = (v_arr[i]->v * v_scale[t]) - v_offset[t];
 
             if ((g_rdp.other_mode_h & (3U << G_MDSFT_TEXTFILT)) != G_TF_POINT) {
                 // Linear filter adds 0.5f to the coordinates
@@ -1714,18 +1721,18 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
                 }
             }
 
-            buf_vbo[buf_vbo_len++] = u / tex_width[t];
-            buf_vbo[buf_vbo_len++] = v / tex_height[t];
+            *buf_vbo_ptr++ = u * inv_tex_width[t];
+            *buf_vbo_ptr++ = v * inv_tex_height[t];
 
             bool clampS = tm & (1 << 2 * t);
             bool clampT = tm & (1 << 2 * t + 1);
 
             if (clampS) {
-                buf_vbo[buf_vbo_len++] = (tex_width2[t] - 0.5f) / tex_width[t];
+                *buf_vbo_ptr++ = (tex_width2[t] - 0.5f) * inv_tex_width[t];
             }
 
             if (clampT) {
-                buf_vbo[buf_vbo_len++] = (tex_height2[t] - 0.5f) / tex_height[t];
+                *buf_vbo_ptr++ = (tex_height2[t] - 0.5f) * inv_tex_height[t];
             }
         }
 
@@ -1737,10 +1744,10 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
         }
 
         if (use_grayscale) {
-            buf_vbo[buf_vbo_len++] = g_rdp.grayscale_color.r / 255.0f;
-            buf_vbo[buf_vbo_len++] = g_rdp.grayscale_color.g / 255.0f;
-            buf_vbo[buf_vbo_len++] = g_rdp.grayscale_color.b / 255.0f;
-            buf_vbo[buf_vbo_len++] = g_rdp.grayscale_color.a / 255.0f; // lerp interpolation factor (not alpha)
+            *buf_vbo_ptr++ = g_rdp.grayscale_color.r * (1.0f / 255.0f);
+            *buf_vbo_ptr++ = g_rdp.grayscale_color.g * (1.0f / 255.0f);
+            *buf_vbo_ptr++ = g_rdp.grayscale_color.b * (1.0f / 255.0f);
+            *buf_vbo_ptr++ = g_rdp.grayscale_color.a * (1.0f / 255.0f); // lerp interpolation factor (not alpha)
         }
 
         for (int j = 0; j < num_inputs; j++) {
@@ -1801,15 +1808,15 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
                         break;
                 }
                 if (k == 0) {
-                    buf_vbo[buf_vbo_len++] = color->r / 255.0f;
-                    buf_vbo[buf_vbo_len++] = color->g / 255.0f;
-                    buf_vbo[buf_vbo_len++] = color->b / 255.0f;
+                    *buf_vbo_ptr++ = color->r * (1.0f / 255.0f);
+                    *buf_vbo_ptr++ = color->g * (1.0f / 255.0f);
+                    *buf_vbo_ptr++ = color->b * (1.0f / 255.0f);
                 } else {
                     if (use_fog && color == &v_arr[i]->color) {
                         // Shade alpha is 100% for fog
-                        buf_vbo[buf_vbo_len++] = 1.0f;
+                        *buf_vbo_ptr++ = 1.0f;
                     } else {
-                        buf_vbo[buf_vbo_len++] = color->a / 255.0f;
+                        *buf_vbo_ptr++ = color->a * (1.0f / 255.0f);
                     }
                 }
             }
@@ -1822,6 +1829,7 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
         // buf_vbo[buf_vbo_len++] = color->a / 255.0f;
     }
 
+    buf_vbo_len = buf_vbo_ptr - buf_vbo;
 #ifdef __vita__
 	buf_vbo_num_tris++;
 #else
@@ -1845,8 +1853,8 @@ static void gfx_sp_extra_geometry_mode(uint32_t clear, uint32_t set) {
 static void gfx_adjust_viewport_or_scissor(XYWidthHeight* area) {
     if (!fbActive) {
         // Adjust the y origin based on the y-inversion for the active framebuffer
-        GfxClipParameters clipParameters = gfx_rapi->get_clip_parameters();
-        if (clipParameters.invert_y) {
+        bool invert_y = gfx_rapi->get_clip_parameters();
+        if (invert_y) {
             area->y -= area->height;
         } else {
             area->y = gfx_native_dimensions.height - area->y;

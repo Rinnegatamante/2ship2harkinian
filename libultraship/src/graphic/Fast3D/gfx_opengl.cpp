@@ -115,8 +115,8 @@ static const char* gfx_opengl_get_name() {
     return "OpenGL";
 }
 
-static struct GfxClipParameters gfx_opengl_get_clip_parameters(void) {
-    return { false, framebuffers[current_framebuffer].invert_y };
+static bool gfx_opengl_get_clip_parameters(void) {
+    return framebuffers[current_framebuffer].invert_y;
 }
 
 static void gfx_opengl_vertex_array_set_attribs(struct ShaderProgram* prg) {
