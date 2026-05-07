@@ -1,3 +1,11 @@
+vita_build
+*.o
+*.elf
+*.velf
+*.bin
+*.sfo
+*.vpk
+
 *.zip
 *.otr
 *.o2r
