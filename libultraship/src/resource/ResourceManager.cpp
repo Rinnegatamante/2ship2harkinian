@@ -62,6 +62,14 @@ std::shared_ptr<IResource> ResourceManager::LoadResourceProcess(const std::strin
 		hash = XXH3_64bits(filePath.c_str(), filePath.size());
 	}
 	
+	if (!loadExact && mAltAssetsEnabled && !filePath.starts_with(IResource::gAltAssetPrefix)) {
+        const auto altPath = IResource::gAltAssetPrefix + filePath;
+        auto altResource = LoadResourceProcess(altPath, loadExact, initData, hash);
+        if (altResource != nullptr) {
+            return altResource;
+        }
+    }
+	
 	auto cachedResource = CheckCache(hash, loadExact);
 	if (cachedResource != nullptr) {
 		return cachedResource;
