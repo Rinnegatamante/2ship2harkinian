@@ -1,5 +1,8 @@
 TARGET := 2ship2harkinian
 TITLE := 2SHIP2HAR
+GFXD_DIR := ZAPDTR/lib/libgfxd
+GFXD_LIB := $(GFXD_DIR)/libgfxd.a
+BUILD_VERSION_SOURCE := .build/vita-config/build.c
 
 SOURCE_FOLDERS := mm/src/overlays/gamestates mm/src/overlays/kaleido_scope mm/src/overlays/actors \
 	mm/src/overlays/effects mm/src/overlays/fbdemos
@@ -40,7 +43,7 @@ SOURCES	:= $(foreach dir,$(SOURCE_FOLDERS), $(wildcard $(dir)/*)) $(LUS_SOURCES)
 INCLUDES := $(LUS_INCLUDES) $(ZAPD_INCLUDES) \
 	mm/include/PR mm/include  mm/assets mm/src  spdlog/include mm/2s2h mm vita 
 
-LIBS = -lstorm -lgfxd -lbzip2 -lzip -lzstd -lz -llzma -lssl -lcrypto -lstdc++ -lpng -Wl,--whole-archive -lpthread -Wl,--no-whole-archive \
+LIBS = -lstorm -lbz2 -lzip -lzstd -lz -llzma -lssl -lcrypto -lstdc++ -lpng -Wl,--whole-archive -lpthread -Wl,--no-whole-archive \
 	-ltinyxml2 -lSDL2 -lvitaGL -lvitashark -lSceShaccCgExt -ltaihen_stub -lmathneon -lSceAudioIn_stub -lSceIme_stub \
 	-lSceKernelDmacMgr_stub -lSceGxm_stub -lSceDisplay_stub -lSceTouch_stub -lSceHid_stub -lSceCtrl_stub -lSceNet_stub \
 	-lSceNetCtl_stub -lSceCommonDialog_stub -lSceAudio_stub -lSceSysmodule_stub -lSceMotion_stub -lSceAppUtil_stub \
@@ -50,6 +53,7 @@ FINAL_SOURCES := f
 
 CFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c))
 CPPFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.cpp))
+CFILES := $(filter-out mm/src/boot/build.c,$(CFILES)) $(BUILD_VERSION_SOURCE)
 OBJS     := $(CFILES:.c=.o) $(CPPFILES:.cpp=.o) \
 	libultraship/imgui/backends/imgui_impl_opengl3.o \
 	libultraship/imgui/backends/imgui_impl_sdl2.o
@@ -123,10 +127,17 @@ CFLAGS  = -fno-lto -g -Wl,-q -O3 -ffast-math -fno-short-enums -fsigned-char \
 		-DCVAR_PREFIX_CONTROLLERS=\"$(CVAR_PREFIX_SETTING).Controllers\" \
 		-DCVAR_PREFIX_ADVANCED_RESOLUTION=\"$(CVAR_PREFIX_SETTING).AdvancedResolution\"
 
-CXXFLAGS  = $(CFLAGS) -fexceptions -std=gnu++20 -fpermissive
+# Preserve pre-C23 callbacks and the upstream legacy-pointer diagnostic policy.
+C_ONLY_FLAGS := -std=gnu17 -Wno-error=int-conversion -Wno-error=incompatible-pointer-types
+CFLAGS += $(C_ONLY_FLAGS)
+CXXFLAGS  = $(filter-out $(C_ONLY_FLAGS),$(CFLAGS)) -fexceptions -std=gnu++20 -fpermissive
 ASFLAGS = $(CFLAGS)
 
 all: $(TARGET).vpk
+
+$(BUILD_VERSION_SOURCE): mm/src/boot/build.c.in CMakeLists.txt CMake/vita-build-version.cmake
+	@mkdir -p $(@D)
+	cmake -DSOURCE_DIR=$(CURDIR) -DOUTPUT=$@ -P CMake/vita-build-version.cmake
 
 $(TARGET).vpk: $(TARGET).velf
 	vita-make-fself -c -s $< eboot.bin
@@ -155,10 +166,14 @@ f:
 	$(PREFIX)-strip -g $<
 	vita-elf-create $< $@
 
-$(TARGET).elf: $(FINAL_OBJS)
+$(GFXD_LIB): $(wildcard $(GFXD_DIR)/*.c $(GFXD_DIR)/*.h) $(GFXD_DIR)/Makefile
+	$(MAKE) -C $(GFXD_DIR) VITA=1 CC=$(CC) AR=$(PREFIX)-ar CFLAGS="-Wall -O2 -g -std=gnu17 -fno-short-enums -fsigned-char"
+
+$(TARGET).elf: $(FINAL_OBJS) $(GFXD_LIB)
 	$(CXX) $(CXXFLAGS) $^ $(LIBS) -o $@
 
 objects: $(OBJS)
 
 clean: $(OBJS_CLEAN)
+	$(MAKE) -C $(GFXD_DIR) VITA=1 clean
 	@rm -rf $(TARGET).velf $(TARGET).elf $(FINAL_OBJS) eboot.bin $(TARGET).vpk param.sfo

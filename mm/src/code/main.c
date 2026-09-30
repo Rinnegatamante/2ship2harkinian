@@ -17,6 +17,7 @@
 
 #ifdef __vita__
 #include <vitasdk.h>
+#include <pthread.h>
 int _newlib_heap_size_user = 256 * 1024 * 1024;
 void *vita_main(void *argv);
 #endif
