@@ -31,6 +31,9 @@ OSTime sGraphPrevUpdateEndTime;
 void Graph_StartFrame();
 void Graph_ProcessGfxCommands(Gfx* commands);
 void Graph_ProcessFrame(void (*run_one_game_iter)(void));
+#ifdef __vita__
+void gfx_vita_backend_wait_idle(void);
+#endif
 
 void Graph_FaultClient(void) {
     FaultDrawer_DrawText(30, 100, "ShowFrameBuffer PAGE 0/1");
@@ -425,6 +428,9 @@ void RunFrame() {
         }
 
         runFrameContext.nextOvl = Graph_GetNextGameState(runFrameContext.gameState);
+#ifdef __vita__
+        gfx_vita_backend_wait_idle();
+#endif
         GameState_Destroy(runFrameContext.gameState);
         SystemArena_Free(runFrameContext.gameState);
         Overlay_FreeGameState(runFrameContext.ovl);

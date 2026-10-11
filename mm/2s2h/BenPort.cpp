@@ -855,12 +855,89 @@ extern "C" void Graph_StartFrame() {
     OTRGlobals::Instance->context->GetWindow()->StartFrame();
 }
 
-void RunCommands(Gfx* Commands, const std::vector<robin_hood::unordered_map<Mtx*, MtxF>>& mtx_replacements) {
+#ifdef __vita__
+extern "C" void gfx_vita_backend_wait_idle();
+extern "C" void gfx_vita_backend_submit(void (*fn)(void*), void* arg);
+extern "C" int gfx_vita_backend_thread_id();
+extern "C" void gfx_vita_backend_run_sync(void (*fn)(void*), void* arg);
+
+struct VitaRenderTask {
+    Gfx* commands = nullptr;
+    std::vector<robin_hood::unordered_map<Mtx*, MtxF>> matrices;
+    size_t matrixCount = 0;
+    int targetFps = 0;
+    int frameLatency = 0;
+    SceUID completionSema = -1;
+    bool submitted = false;
+};
+
+static VitaRenderTask sVitaRenderTasks[2];
+static unsigned sVitaNextRenderTask = 0;
+
+static VitaRenderTask& AcquireVitaRenderTask() {
+    VitaRenderTask& task = sVitaRenderTasks[sVitaNextRenderTask++ & 1];
+    if (task.submitted) {
+        if (task.completionSema >= 0) {
+            sceKernelWaitSema(task.completionSema, 1, nullptr);
+        } else {
+            gfx_vita_backend_wait_idle();
+        }
+        task.submitted = false;
+    }
+    if (task.completionSema < 0) {
+        task.completionSema = sceKernelCreateSema("2Ship Render Slot", 0, 0, 1, nullptr);
+    }
+    task.matrixCount = 0;
+    return task;
+}
+
+static robin_hood::unordered_map<Mtx*, MtxF>& NextVitaRenderMatrices(VitaRenderTask& task) {
+    if (task.matrixCount == task.matrices.size()) {
+        task.matrices.emplace_back();
+    }
+    auto& replacements = task.matrices[task.matrixCount++];
+    replacements.clear();
+    return replacements;
+}
+
+void RunCommands(Gfx* Commands, VitaRenderTask& task, int targetFps, int frameLatency) {
+    task.commands = Commands;
+    task.targetFps = targetFps;
+    task.frameLatency = frameLatency;
+    task.submitted = true;
+    gfx_vita_backend_submit([](void* raw) {
+        auto* frame = static_cast<VitaRenderTask*>(raw);
+        if (gfx_vita_backend_thread_id() >= 0) {
+            static int lastFps = -1;
+            static int lastLatency = -1;
+            if (frame->targetFps != lastFps) {
+                gfx_set_target_fps(frame->targetFps);
+                lastFps = frame->targetFps;
+            }
+            if (frame->frameLatency != lastLatency) {
+                gfx_set_maximum_frame_latency(frame->frameLatency);
+                lastLatency = frame->frameLatency;
+            }
+            gfx_start_frame();
+        }
+        for (size_t i = 0; i < frame->matrixCount; ++i) {
+            gfx_run(frame->commands, frame->matrices[i]);
+            gfx_end_frame();
+        }
+        if (frame->completionSema >= 0) {
+            sceKernelSignalSema(frame->completionSema, 1);
+        }
+    }, &task);
+}
+#else
+void RunCommands(Gfx* Commands, const std::vector<robin_hood::unordered_map<Mtx*, MtxF>>& mtx_replacements,
+                 int targetFps, int frameLatency) {
     for (const auto& m : mtx_replacements) {
         gfx_run(Commands, m);
         gfx_end_frame();
     }
 }
+#endif
 
 // C->C++ Bridge
 extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {
@@ -870,7 +947,11 @@ extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {
     }
 
     audio.cv_to_thread.notify_one();
+#ifdef __vita__
+    VitaRenderTask& renderTask = AcquireVitaRenderTask();
+#else
     std::vector<robin_hood::unordered_map<Mtx*, MtxF>> mtx_replacements;
+#endif
     int target_fps = CVarGetInteger("gInterpolationFPS", 20);
     static int last_fps;
     static int last_update_rate;
@@ -901,9 +982,17 @@ extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {
     while (time + original_fps <= next_original_frame) {
         time += original_fps;
         if (time != next_original_frame) {
+#ifdef __vita__
+            FrameInterpolation_Interpolate((float)time / next_original_frame, NextVitaRenderMatrices(renderTask));
+#else
             mtx_replacements.push_back(FrameInterpolation_Interpolate((float)time / next_original_frame));
+#endif
         } else {
+#ifdef __vita__
+            NextVitaRenderMatrices(renderTask);
+#else
             mtx_replacements.emplace_back();
+#endif
         }
     }
 
@@ -911,22 +1000,39 @@ extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {
 
     int threshold = CVarGetInteger("gExtraLatencyThreshold", 80);
 
+    const int frameLatency = threshold > 0 && target_fps >= threshold ? 2 : 1;
+#ifndef __vita__
     if (wnd != nullptr) {
         wnd->SetTargetFps(fps);
-        wnd->SetMaximumFrameLatency(threshold > 0 && target_fps >= threshold ? 2 : 1);
+        wnd->SetMaximumFrameLatency(frameLatency);
     }
+#else
+    if (wnd != nullptr && gfx_vita_backend_thread_id() < 0) {
+        wnd->SetTargetFps(fps);
+        wnd->SetMaximumFrameLatency(frameLatency);
+    }
+#endif
 
     // When the gfx debugger is active, only run with the final mtx
     if (GfxDebuggerIsDebugging()) {
+#ifdef __vita__
+        renderTask.matrixCount = 0;
+        NextVitaRenderMatrices(renderTask);
+#else
         mtx_replacements.clear();
         mtx_replacements.emplace_back();
+#endif
     }
 
 #ifdef AUTO_FRAMESKIP
     current_frametime -= frametime;
     if (current_frametime < 0.0f) {
         static uint32_t tick = sceKernelGetProcessTimeLow();
-        RunCommands(commands, mtx_replacements);
+#ifdef __vita__
+        RunCommands(commands, renderTask, fps, frameLatency);
+#else
+        RunCommands(commands, mtx_replacements, fps, frameLatency);
+#endif
         uint32_t new_tick = sceKernelGetProcessTimeLow();
         if (new_tick - tick < 500000) {// When there's a stutter (0.5s), don't count it for the frameskip
             current_frametime += (float)(new_tick - tick) / 1000000.0f;
@@ -936,7 +1042,11 @@ extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {
         tick = new_tick;
     }
 #else
-    RunCommands(commands, mtx_replacements);
+#ifdef __vita__
+    RunCommands(commands, renderTask, fps, frameLatency);
+#else
+    RunCommands(commands, mtx_replacements, fps, frameLatency);
+#endif
 #endif
 
     last_fps = fps;
@@ -951,9 +1061,17 @@ extern "C" void Graph_ProcessGfxCommands(Gfx* commands) {
 
     bool curAltAssets = CVarGetInteger("gEnhancements.Mods.AlternateAssets", 0);
     if (prevAltAssets != curAltAssets) {
+#ifdef __vita__
+        // The render task may still reference textures/resources from the previous asset set.
+        gfx_vita_backend_wait_idle();
+#endif
         prevAltAssets = curAltAssets;
         Ship::Context::GetInstance()->GetResourceManager()->SetAltAssetsEnabled(curAltAssets);
+#ifdef __vita__
+        gfx_vita_backend_run_sync([](void*) { gfx_texture_cache_clear(); }, nullptr);
+#else
         gfx_texture_cache_clear();
+#endif
         // TODO: skeleton patch, hooks
         // SOH::SkeletonPatcher::UpdateSkeletons();
         // GameInteractor::Instance->ExecuteHooks<GameInteractor::OnAssetAltChange>();

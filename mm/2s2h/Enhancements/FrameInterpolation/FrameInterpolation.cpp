@@ -3,6 +3,11 @@
 #include <vector>
 #include <map>
 #include <unordered_map>
+#ifdef __vita__
+#include <cstddef>
+#include <memory_resource>
+#include <new>
+#endif
 #include <math.h>
 
 #include "FrameInterpolation.h"
@@ -177,21 +182,52 @@ union Data {
 };
 
 struct Path {
+#ifdef __vita__
+    explicit Path(std::pmr::memory_resource* resource) : children(resource), ops(resource), items(resource) {}
+    Path(const Path&) = delete;
+    Path(Path&&) noexcept = default;
+
+    std::pmr::map<label, std::pmr::vector<Path>> children;
+    std::pmr::map<Op, std::pmr::vector<Data>> ops;
+    std::pmr::vector<pair<Op, size_t>> items;
+#else
     map<label, vector<Path>> children;
     map<Op, vector<Data>> ops;
     vector<pair<Op, size_t>> items;
+#endif
 };
 
 struct Recording {
+#ifdef __vita__
+    static constexpr size_t ArenaCapacity = 1024 * 1024;
+    alignas(std::max_align_t) char storage[ArenaCapacity];
+    std::pmr::monotonic_buffer_resource arena;
     Path root_path;
+
+    Recording() : arena(storage, sizeof(storage)), root_path(&arena) {}
+
+    void Reset() {
+        root_path.~Path();
+        arena.release();
+        new (&root_path) Path(&arena);
+    }
+#else
+    Path root_path;
+#endif
 };
 
 bool is_recording;
 vector<Path*> current_path;
 uint32_t camera_epoch;
 uint32_t previous_camera_epoch;
+#ifdef __vita__
+Recording recordingPool[2];
+Recording* current_recording = &recordingPool[0];
+Recording* previous_recording = &recordingPool[1];
+#else
 Recording current_recording;
 Recording previous_recording;
+#endif
 
 bool interpolate_wider_angles = false;
 
@@ -209,9 +245,11 @@ Data& append(Op op) {
 }
 
 struct InterpolateCtx {
+    explicit InterpolateCtx(robin_hood::unordered_map<Mtx*, MtxF>& replacements) : mtx_replacements(replacements) {}
+
     float step;
     float w;
-    robin_hood::unordered_map<Mtx*, MtxF> mtx_replacements;
+    robin_hood::unordered_map<Mtx*, MtxF>& mtx_replacements;
     MtxF tmp_mtxf, tmp_mtxf2;
     Vec3f tmp_vec3f;
     Vec3s tmp_vec3s;
@@ -455,12 +493,22 @@ struct InterpolateCtx {
 
 } // anonymous namespace
 
-robin_hood::unordered_map<Mtx*, MtxF> FrameInterpolation_Interpolate(float step) {
-    InterpolateCtx ctx;
+void FrameInterpolation_Interpolate(float step, robin_hood::unordered_map<Mtx*, MtxF>& replacements) {
+    replacements.clear();
+    InterpolateCtx ctx(replacements);
     ctx.step = step;
     ctx.w = 1.0f - step;
+#ifdef __vita__
+    ctx.interpolate_branch(&previous_recording->root_path, &current_recording->root_path);
+#else
     ctx.interpolate_branch(&previous_recording.root_path, &current_recording.root_path);
-    return ctx.mtx_replacements;
+#endif
+}
+
+robin_hood::unordered_map<Mtx*, MtxF> FrameInterpolation_Interpolate(float step) {
+    robin_hood::unordered_map<Mtx*, MtxF> replacements;
+    FrameInterpolation_Interpolate(step, replacements);
+    return replacements;
 }
 
 bool camera_interpolation = false;
@@ -470,10 +518,19 @@ void FrameInterpolation_ShouldInterpolateFrame(bool shouldInterpolate) {
 }
 
 void FrameInterpolation_StartRecord(void) {
+#ifdef __vita__
+    std::swap(current_recording, previous_recording);
+    current_recording->Reset();
+#else
     previous_recording = move(current_recording);
     current_recording = {};
+#endif
     current_path.clear();
+#ifdef __vita__
+    current_path.push_back(&current_recording->root_path);
+#else
     current_path.push_back(&current_recording.root_path);
+#endif
     if (!camera_interpolation) {
         // default to interpolating
         camera_interpolation = true;
@@ -496,7 +553,11 @@ void FrameInterpolation_RecordOpenChild(const void* a, int b) {
     label key = { a, b };
     auto& m = current_path.back()->children[key];
     append(Op::OpenChild).open_child = { key, m.size() };
+#ifdef __vita__
+    current_path.push_back(&m.emplace_back(&current_recording->arena));
+#else
     current_path.push_back(&m.emplace_back());
+#endif
 }
 
 void FrameInterpolation_RecordCloseChild(void) {
