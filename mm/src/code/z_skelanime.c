@@ -1,5 +1,8 @@
 #include "global.h"
 #include "BenPort.h"
+#ifdef __vita__
+#include "2s2h/Enhancements/FrameInterpolation/FrameInterpolation.h"
+#endif
 #include <string.h>
 #include <stdio.h>
 
@@ -151,6 +154,12 @@ void SkelAnime_DrawFlexLimbLod(PlayState* play, s32 limbIndex, void** skeleton, 
 
     OPEN_DISPS(play->state.gfxCtx);
 
+#ifdef __vita__
+    const bool recordPlayerLimb = actor != NULL && actor->id == ACTOR_PLAYER;
+    if (recordPlayerLimb) {
+        FrameInterpolation_RecordOpenChild(skeleton, limbIndex + 1);
+    }
+#endif
     Matrix_Push();
 
     limb = Lib_SegmentedToVirtual(skeleton[limbIndex]);
@@ -188,6 +197,11 @@ void SkelAnime_DrawFlexLimbLod(PlayState* play, s32 limbIndex, void** skeleton, 
 
     Matrix_Pop();
 
+#ifdef __vita__
+    if (recordPlayerLimb) {
+        FrameInterpolation_RecordCloseChild();
+    }
+#endif
     if (limb->sibling != LIMB_DONE) {
         SkelAnime_DrawFlexLimbLod(play, limb->sibling, skeleton, jointTable, overrideLimbDraw, postLimbDraw, actor, lod,
                                   mtx);
@@ -218,6 +232,12 @@ void SkelAnime_DrawFlexLod(PlayState* play, void** skeleton, Vec3s* jointTable, 
 
     OPEN_DISPS(play->state.gfxCtx);
 
+#ifdef __vita__
+    const bool recordPlayerLimb = actor != NULL && actor->id == ACTOR_PLAYER;
+    if (recordPlayerLimb) {
+        FrameInterpolation_RecordOpenChild(skeleton, 0);
+    }
+#endif
     gSPSegment(POLY_OPA_DISP++, 0x0D, mtx);
     Matrix_Push();
 
@@ -256,6 +276,11 @@ void SkelAnime_DrawFlexLod(PlayState* play, void** skeleton, Vec3s* jointTable, 
 
     Matrix_Pop();
 
+#ifdef __vita__
+    if (recordPlayerLimb) {
+        FrameInterpolation_RecordCloseChild();
+    }
+#endif
     CLOSE_DISPS(play->state.gfxCtx);
 }
 

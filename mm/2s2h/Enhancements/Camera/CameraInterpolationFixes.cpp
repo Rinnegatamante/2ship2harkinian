@@ -49,6 +49,16 @@ bool Camera_ShouldInterpolateDist(Camera* camera) {
     bool shouldInterpolate = true;
     VecGeo eyeGeo = OLib_Vec3fDiffToVecGeo(at, eye);
     Vec3f expectedEye;
+#ifdef __vita__
+    static const Camera* lastCamera = nullptr;
+    static const PlayState* lastPlay = nullptr;
+    static int lastUid = -1;
+    static int lastSetting = -1;
+    static int lastMode = -1;
+    const bool changedCamera = lastCamera != camera || lastPlay != camera->play ||
+                               lastUid != camera->uid || lastSetting != camera->setting ||
+                               lastMode != camera->mode;
+#endif
 
     // Calculate Current
     f32 yaw = BINANG_TO_DEG(eyeGeo.yaw);
@@ -63,6 +73,7 @@ bool Camera_ShouldInterpolateDist(Camera* camera) {
     Math_Vec3f_Diff(eye, &lastEye, &eyeVelo);
 
     // Update static variables.
+#ifndef __vita__
     lastYaw = yaw;
     lastYawVelocity = yawVelocity;
     lastPitch = pitch;
@@ -73,6 +84,7 @@ bool Camera_ShouldInterpolateDist(Camera* camera) {
     if (Camera_ShouldOverrideInterpolationCheck(camera)) {
         return true;
     }
+#endif
 
     // Calculate Expected
     f32 expectedYaw = lastYaw + lastYawVelocity;
@@ -88,10 +100,39 @@ bool Camera_ShouldInterpolateDist(Camera* camera) {
     f32 diffYaw = fabsf(yaw - expectedYaw);
     f32 diffPitch = fabsf(pitch - expectedPitch);
     f32 diffDistEye = Math_Vec3f_DistXYZ(eye, &expectedEye);
+#ifdef __vita__
+    // Use the shortest angular distance across the +/-180 degree seam.
+    diffYaw = fmodf(diffYaw, 360.0f);
+    if (diffYaw > 180.0f) {
+        diffYaw = 360.0f - diffYaw;
+    }
+#endif
 
-    if ((diffYaw > 90.0f && diffYaw < 270.0f) || diffPitch > 60.0f || diffDistEye > 200.0f) {
+    if ((diffYaw > 90.0f && diffYaw < 270.0f) || diffPitch > 60.0f || diffDistEye > 200.0f
+#ifdef __vita__
+        || changedCamera
+#endif
+    ) {
         shouldInterpolate = false;
     }
+
+#ifdef __vita__
+    // Prediction uses the *previous* velocity; only commit the new sample
+    // after checking it. Each camera identity/mode transition is a cut.
+    lastYawVelocity = yaw - lastYaw;
+    if (lastYawVelocity > 180.0f) lastYawVelocity -= 360.0f;
+    if (lastYawVelocity < -180.0f) lastYawVelocity += 360.0f;
+    lastPitchVelocity = pitchVelocity;
+    lastEyeVelocity = eyeVelo;
+    lastYaw = yaw;
+    lastPitch = pitch;
+    lastEye = *eye;
+    lastCamera = camera;
+    lastPlay = camera->play;
+    lastUid = camera->uid;
+    lastSetting = camera->setting;
+    lastMode = camera->mode;
+#endif
 
     // If we aren't interpolating, then reset velocities as they are inaccurate to the camera's current movement
     if (!shouldInterpolate) {
@@ -105,5 +146,15 @@ bool Camera_ShouldInterpolateDist(Camera* camera) {
 
 void RegisterCameraInterpolationFixes() {
     GameInteractor::Instance->RegisterGameHook<GameInteractor::AfterCameraUpdate>(
-        [](Camera* camera) { FrameInterpolation_ShouldInterpolateFrame(Camera_ShouldInterpolateDist(camera)); });
+        [](Camera* camera) {
+            const bool interpolate = Camera_ShouldInterpolateDist(camera);
+#ifdef __vita__
+            if (!interpolate) {
+                // Skip all intermediate matrices, not merely the camera path:
+                // newly visible actors may reuse paths from the previous shot.
+                FrameInterpolation_DontInterpolateCamera();
+            }
+#endif
+            FrameInterpolation_ShouldInterpolateFrame(interpolate);
+        });
 }

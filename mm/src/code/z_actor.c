@@ -26,6 +26,18 @@
 #include "2s2h/BenPort.h"
 #include "2s2h/ShipUtils.h"
 
+static inline s32 Actor_InterpolationIdentity(const Actor* actor) {
+#ifdef __vita__
+    // The original label was only the Actor* address. The heap can reuse that
+    // address for a different actor across a shot/room transition; do not
+    // interpolate its transforms against those of the previous occupant.
+    return actor != NULL ? (s32)(((u32)(u16)actor->id << 16) | (u16)actor->params) : 0;
+#else
+    (void)actor;
+    return 0;
+#endif
+}
+
 // bss
 // FaultClient sActorFaultClient; // 2 funcs
 
@@ -537,7 +549,7 @@ void Target_Draw(TargetContext* targetCtx, PlayState* play) {
         s32 index;
         f32 lockOnScaleX;
 
-        FrameInterpolation_RecordOpenChild(actor, 0);
+        FrameInterpolation_RecordOpenChild(actor, Actor_InterpolationIdentity(actor));
 
         if (targetCtx->rotZTick != 0) {
             totalEntries = 1;
@@ -621,7 +633,7 @@ void Target_Draw(TargetContext* targetCtx, PlayState* play) {
     actor = targetCtx->arrowPointedActor;
     if ((actor != NULL) && !(actor->flags & ACTOR_FLAG_CANT_LOCK_ON)) {
         TatlColor* color = &sTatlColorList[actor->category];
-        FrameInterpolation_RecordOpenChild(actor, 0);
+        FrameInterpolation_RecordOpenChild(actor, Actor_InterpolationIdentity(actor));
 
         POLY_XLU_DISP = Gfx_SetupDL(POLY_XLU_DISP, SETUPDL_7);
 
@@ -2801,7 +2813,7 @@ extern void Player_Action_95(Player* this, PlayState* play);
 void Actor_Draw(PlayState* play, Actor* actor) {
     Lights* light;
 
-    FrameInterpolation_RecordOpenChild(actor, 0);
+    FrameInterpolation_RecordOpenChild(actor, Actor_InterpolationIdentity(actor));
     OPEN_DISPS(play->state.gfxCtx);
 
     light = LightContext_NewLights(&play->lightCtx, play->state.gfxCtx);

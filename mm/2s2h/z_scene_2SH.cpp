@@ -39,6 +39,10 @@
 #include "2s2h/resource/type/scenecommand/SetMinimapChests.h"
 #include "2s2h/resource/type/scenecommand/SetCsCamera.h"
 
+#ifdef __vita__
+extern "C" void gfx_vita_backend_wait_idle();
+#endif
+
 s32 OTRScene_ExecuteCommands(PlayState* play, SOH::Scene* scene);
 
 void Scene_CommandSpawnList(PlayState* play, SOH::ISceneCommand* cmd) {
@@ -495,6 +499,11 @@ extern "C" s32 OTRfunc_8009728C(PlayState* play, RoomContext* roomCtx, s32 roomN
     u32 size;
 
     if (roomCtx->status == 0) {
+#ifdef __vita__
+        // The previous frame's display lists may still reference room objects
+        // while the game thread replaces room commands and object slots.
+        gfx_vita_backend_wait_idle();
+#endif
         roomCtx->prevRoom = roomCtx->curRoom;
         roomCtx->curRoom.num = roomNum;
         roomCtx->curRoom.segment = NULL;

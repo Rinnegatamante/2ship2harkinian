@@ -5,6 +5,10 @@
 #include <Vertex.h>
 #include "2s2h/GameInteractor/GameInteractor.h"
 
+#ifdef __vita__
+extern "C" void gfx_vita_backend_wait_idle();
+#endif
+
 extern "C" {
 #include "global.h"
 extern uintptr_t gSegments[NUM_SEGMENTS];
@@ -38,6 +42,11 @@ extern "C" void OTRPlay_InitScene(PlayState* play, s32 spawn) {
 }
 
 extern "C" void OTRPlay_SpawnScene(PlayState* play, s32 sceneId, s32 spawn) {
+#ifdef __vita__
+    // A scene replacement may invalidate room/actor storage still traversed
+    // by the deferred renderer. Synchronize only on scene changes.
+    gfx_vita_backend_wait_idle();
+#endif
     s32 pad;
     SceneTableEntry* scene = &gSceneTable[sceneId];
 

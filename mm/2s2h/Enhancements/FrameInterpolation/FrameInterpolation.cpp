@@ -190,6 +190,7 @@ struct Path {
     std::pmr::map<label, std::pmr::vector<Path>> children;
     std::pmr::map<Op, std::pmr::vector<Data>> ops;
     std::pmr::vector<pair<Op, size_t>> items;
+    uint64_t operationSignature = UINT64_C(14695981039346656037);
 #else
     map<label, vector<Path>> children;
     map<Op, vector<Data>> ops;
@@ -221,6 +222,9 @@ vector<Path*> current_path;
 uint32_t camera_epoch;
 uint32_t previous_camera_epoch;
 #ifdef __vita__
+bool camera_cut_this_frame;
+#endif
+#ifdef __vita__
 Recording recordingPool[2];
 Recording* current_recording = &recordingPool[0];
 Recording* previous_recording = &recordingPool[1];
@@ -239,8 +243,12 @@ MtxF inv_actor_mtx;
 size_t inv_actor_mtx_path_index;
 
 Data& append(Op op) {
-    auto& m = current_path.back()->ops[op];
-    current_path.back()->items.emplace_back(op, m.size());
+    auto* path = current_path.back();
+    auto& m = path->ops[op];
+    path->items.emplace_back(op, m.size());
+#ifdef __vita__
+    path->operationSignature = (path->operationSignature ^ (uint64_t)(uint8_t)op) * UINT64_C(1099511628211);
+#endif
     return m.emplace_back();
 }
 
@@ -254,6 +262,9 @@ struct InterpolateCtx {
     Vec3f tmp_vec3f;
     Vec3s tmp_vec3s;
     MtxF actor_mtx;
+#ifdef __vita__
+    bool actor_mtx_valid = false;
+#endif
 
     MtxF* new_replacement(Mtx* addr) {
         return &mtx_replacements[addr];
@@ -343,10 +354,30 @@ struct InterpolateCtx {
     }
 
     void interpolate_branch(Path* old_path, Path* new_path) {
+#ifdef __vita__
+        Path* old_ops_path = old_path;
+        if (old_path != new_path) {
+            const bool mismatched = old_path->items.size() != new_path->items.size() ||
+                                    old_path->operationSignature != new_path->operationSignature;
+            if (mismatched) {
+                // Replay incompatible parent ops but interpolate matched children.
+                old_ops_path = new_path;
+            }
+        }
+#else
+        Path* old_ops_path = old_path;
+#endif
         for (auto& item : new_path->items) {
             Data& new_op = new_path->ops[item.first][item.second];
 
             if (item.first == Op::OpenChild) {
+#ifdef __vita__
+                const bool parent_actor_valid = actor_mtx_valid;
+                MtxF parent_actor_mtx;
+                if (parent_actor_valid) {
+                    parent_actor_mtx = actor_mtx;
+                }
+#endif
                 if (auto it = old_path->children.find(new_op.open_child.key);
                     it != old_path->children.end() && new_op.open_child.idx < it->second.size()) {
                     interpolate_branch(&it->second[new_op.open_child.idx],
@@ -355,10 +386,16 @@ struct InterpolateCtx {
                     interpolate_branch(&new_path->children.find(new_op.open_child.key)->second[new_op.open_child.idx],
                                        &new_path->children.find(new_op.open_child.key)->second[new_op.open_child.idx]);
                 }
+#ifdef __vita__
+                actor_mtx_valid = parent_actor_valid;
+                if (parent_actor_valid) {
+                    actor_mtx = parent_actor_mtx;
+                }
+#endif
                 continue;
             }
 
-            if (auto it = old_path->ops.find(item.first); it != old_path->ops.end()) {
+            if (auto it = old_ops_path->ops.find(item.first); it != old_ops_path->ops.end()) {
                 if (item.second < it->second.size()) {
                     Data& old_op = it->second[item.second];
                     switch (item.first) {
@@ -447,7 +484,16 @@ struct InterpolateCtx {
                             if (new_op.matrix_set_translate_rotate_yxz.has_mtx &&
                                 old_op.matrix_set_translate_rotate_yxz.has_mtx) {
                                 actor_mtx = *Matrix_GetCurrent();
+#ifdef __vita__
+                                actor_mtx_valid = true;
+#endif
                             }
+#ifdef __vita__
+                            else if (new_op.matrix_set_translate_rotate_yxz.has_mtx !=
+                                     old_op.matrix_set_translate_rotate_yxz.has_mtx) {
+                                actor_mtx_valid = false;
+                            }
+#endif
                             interpolate_wider_angles = false;
                             break;
 
@@ -457,6 +503,18 @@ struct InterpolateCtx {
                             break;
 
                         case Op::MatrixToMtx: {
+#ifdef __vita__
+                            if (old_op.matrix_to_mtx.has_adjusted != new_op.matrix_to_mtx.has_adjusted) {
+                                // These matrices are expressed in different
+                                // spaces; interpolating them teleports geometry.
+                                break;
+                            }
+                            if (new_op.matrix_to_mtx.has_adjusted && !actor_mtx_valid) {
+                                // Do not borrow the actor matrix left by a
+                                // different branch of the draw tree.
+                                break;
+                            }
+#endif
                             //*new_replacement(new_op.matrix_to_mtx.dest) = *Matrix_GetCurrent();
                             if (old_op.matrix_to_mtx.has_adjusted && new_op.matrix_to_mtx.has_adjusted) {
                                 interpolate_mtxf(&tmp_mtxf, &old_op.matrix_to_mtx.src, &new_op.matrix_to_mtx.src);
@@ -495,6 +553,11 @@ struct InterpolateCtx {
 
 void FrameInterpolation_Interpolate(float step, robin_hood::unordered_map<Mtx*, MtxF>& replacements) {
     replacements.clear();
+#ifdef __vita__
+    if (camera_cut_this_frame) {
+        return;
+    }
+#endif
     InterpolateCtx ctx(replacements);
     ctx.step = step;
     ctx.w = 1.0f - step;
@@ -518,6 +581,9 @@ void FrameInterpolation_ShouldInterpolateFrame(bool shouldInterpolate) {
 }
 
 void FrameInterpolation_StartRecord(void) {
+#ifdef __vita__
+    camera_cut_this_frame = camera_epoch != previous_camera_epoch;
+#endif
 #ifdef __vita__
     std::swap(current_recording, previous_recording);
     current_recording->Reset();
@@ -575,6 +641,9 @@ void FrameInterpolation_RecordCloseChild(void) {
 
 void FrameInterpolation_DontInterpolateCamera(void) {
     camera_epoch = previous_camera_epoch + 1;
+#ifdef __vita__
+    camera_cut_this_frame = true;
+#endif
 }
 
 int FrameInterpolation_GetCameraEpoch(void) {
@@ -663,9 +732,20 @@ void FrameInterpolation_RecordMatrixSetTranslateRotateYXZ(f32 translateX, f32 tr
         d.interpolate_wider_angles = interpolate_wider_angles;
         interpolate_wider_angles = false;
         // d.mtx = *Matrix_GetCurrent();
+#ifdef __vita__
+        if (!invert_matrix((const float*)Matrix_GetCurrent()->mf, (float*)inv_actor_mtx.mf)) {
+            // Singular actor base matrices cannot safely be used for relative
+            // interpolation. Keep its real current-frame matrices instead.
+            d.has_mtx = false;
+            has_inv_actor_mtx = false;
+        } else {
+            has_inv_actor_mtx = true;
+        }
+#else
         invert_matrix((const float*)Matrix_GetCurrent()->mf, (float*)inv_actor_mtx.mf);
-        next_is_actor_pos_rot_matrix = false;
         has_inv_actor_mtx = true;
+#endif
+        next_is_actor_pos_rot_matrix = false;
         inv_actor_mtx_path_index = current_path.size();
     }
 }

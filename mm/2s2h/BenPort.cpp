@@ -874,8 +874,7 @@ struct VitaRenderTask {
 static VitaRenderTask sVitaRenderTasks[2];
 static unsigned sVitaNextRenderTask = 0;
 
-static VitaRenderTask& AcquireVitaRenderTask() {
-    VitaRenderTask& task = sVitaRenderTasks[sVitaNextRenderTask++ & 1];
+static void WaitForVitaRenderTask(VitaRenderTask& task) {
     if (task.submitted) {
         if (task.completionSema >= 0) {
             sceKernelWaitSema(task.completionSema, 1, nullptr);
@@ -884,6 +883,19 @@ static VitaRenderTask& AcquireVitaRenderTask() {
         }
         task.submitted = false;
     }
+}
+
+extern "C" void gfx_vita_wait_for_gfx_pool(Gfx* commands) {
+    for (auto& task : sVitaRenderTasks) {
+        if (task.commands == commands) {
+            WaitForVitaRenderTask(task);
+        }
+    }
+}
+
+static VitaRenderTask& AcquireVitaRenderTask() {
+    VitaRenderTask& task = sVitaRenderTasks[sVitaNextRenderTask++ & 1];
+    WaitForVitaRenderTask(task);
     if (task.completionSema < 0) {
         task.completionSema = sceKernelCreateSema("2Ship Render Slot", 0, 0, 1, nullptr);
     }

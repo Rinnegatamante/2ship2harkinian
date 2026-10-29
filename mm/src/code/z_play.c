@@ -42,6 +42,10 @@ u8 sMotionBlurStatus;
 #include "2s2h/framebuffer_effects.h"
 #include <string.h>
 
+#ifdef __vita__
+extern void gfx_vita_backend_wait_idle(void);
+#endif
+
 s32 gDbgCamEnabled = false;
 u8 D_801D0D54 = false;
 
@@ -402,6 +406,10 @@ Gfx* Play_SetFog(PlayState* this, Gfx* gfx) {
 }
 
 void Play_Destroy(GameState* thisx) {
+#ifdef __vita__
+    // Release scene objects only after the render worker finishes using them.
+    gfx_vita_backend_wait_idle();
+#endif
     PlayState* this = (PlayState*)thisx;
     GraphicsContext* gfxCtx = this->state.gfxCtx;
 

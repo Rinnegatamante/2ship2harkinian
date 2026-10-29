@@ -33,6 +33,7 @@ void Graph_ProcessGfxCommands(Gfx* commands);
 void Graph_ProcessFrame(void (*run_one_game_iter)(void));
 #ifdef __vita__
 void gfx_vita_backend_wait_idle(void);
+void gfx_vita_wait_for_gfx_pool(Gfx* commands);
 #endif
 
 void Graph_FaultClient(void) {
@@ -263,6 +264,10 @@ void Graph_ExecuteAndDraw(GraphicsContext* gfxCtx, GameState* gameState) {
     }
 
     gameState->unk_A3 = 0;
+#ifdef __vita__
+    // The game may not overwrite a display-list pool until its previous render has completed.
+    gfx_vita_wait_for_gfx_pool(gGfxPools[gfxCtx->gfxPoolIdx % 2].master.taskStart);
+#endif
     Graph_SetNextGfxPool(gfxCtx);
 
     GameState_Update(gameState);
