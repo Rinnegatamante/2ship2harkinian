@@ -55,7 +55,7 @@ typedef enum {
 extern "C" {
 GLboolean vglInitWithCustomThreshold(int pool_size, int width, int height, int ram_threshold, int cdram_threshold, int phycont_threshold, int cdlg_threshold, SceGxmMultisampleMode msaa);
 void vglSetParamBufferSize(uint32_t size);
-void vglSetupDisplayRenderTarget(uint8_t size);
+void vglSetupRenderTargetScenesNum(uint8_t display_size, uint8_t fbo_size);
 void *vglAllocFromScratch(size_t);
 };
 #endif
@@ -336,7 +336,7 @@ static void gfx_sdl_init(const char* game_name, const char* gfx_api_name, bool s
 #ifdef __vita__
     printf("Initing vitaGL...\n");
     vglSetParamBufferSize(6 * 1024 * 1024);
-    vglSetupDisplayRenderTarget(3);
+    vglSetupRenderTargetScenesNum(3, 1);
     vglInitWithCustomThreshold(0, 960, 544, 4 * 1024 * 1024, 0, 0, 0, SCE_GXM_MULTISAMPLE_4X);
     SDL_setenv("VITA_USE_GLSL_TRANSLATOR", "1", 1);
     buf_vbo = (float *)vglAllocFromScratch(10 * 1024 * 1024);
